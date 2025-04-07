@@ -142,6 +142,7 @@ func renameKey(node dbNode, value string) error {
 }
 
 func renameBucket(node dbNode, value string) error {
+	oldName := node.path[len(node.path)-1]
 	if db == nil {
 		return errors.New("database not open")
 	}
@@ -154,7 +155,7 @@ func renameBucket(node dbNode, value string) error {
 		if err != nil {
 			return err
 		}
-		oldB := b.Bucket([]byte(node.path[len(node.path)-1]))
+		oldB := b.Bucket([]byte(oldName))
 		if oldB == nil {
 			return errors.New("invalid path: bucket does not exist")
 		}
@@ -165,6 +166,9 @@ func renameBucket(node dbNode, value string) error {
 			return nil
 		})
 		if err != nil {
+			return err
+		}
+		if err := b.DeleteBucket([]byte(oldName)); err != nil {
 			return err
 		}
 		return nil
