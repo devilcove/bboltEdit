@@ -39,6 +39,7 @@ func InitDatabase(file string) error {
 	}
 	old = file
 	log.Println("loaded db file", file)
+	header.SetText("bbolt database file: " + file)
 	return nil
 }
 

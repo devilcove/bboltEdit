@@ -14,14 +14,16 @@ import (
 
 var (
 	app     *tview.Application
+	errDisp *tview.Modal
+	header  *tview.TextView
 	pager   *tview.Pages
 	tree    *tview.TreeView
-	errDisp *tview.Modal
 )
 
 // Show a navigable tree view of the current directory.
 func main() {
 	InitLog()
+	header = textView("header")
 	if err := InitDatabase("test.db"); err != nil {
 		panic(err)
 	}
@@ -36,7 +38,7 @@ func main() {
 		SetRows(1, 0, 1).
 		SetColumns(0, 0).
 		SetBorders(true).
-		AddItem(textView("Header"), 0, 0, 1, 2, 0, 0, false).
+		AddItem(header, 0, 0, 1, 2, 0, 0, false).
 		AddItem(textView("press alt-? for help, ctrl-Q to quit"), 2, 0, 1, 2, 0, 0, false).
 		AddItem(tree, 1, 0, 1, 1, 0, 0, true).
 		AddItem(details, 1, 1, 1, 1, 0, 0, false)
@@ -110,7 +112,7 @@ func textArea(text string) *tview.TextArea {
 		SetText(text, true)
 }
 
-func textView(text string) tview.Primitive {
+func textView(text string) *tview.TextView {
 	return tview.NewTextView().
 		SetTextAlign(tview.AlignCenter).
 		SetText(text)
