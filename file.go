@@ -28,7 +28,11 @@ func newFiles() *tview.Grid {
 	grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyEnter:
-			node := picker.GetCurrentNode().GetReference().(ref)
+			r := picker.GetCurrentNode().GetReference()
+			if r == nil {
+				return nil
+			}
+			node := r.(ref)
 			if !node.isDir {
 				log.Println("switching to", node.path)
 				if err := InitDatabase(node.path); err != nil {
