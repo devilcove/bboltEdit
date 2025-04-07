@@ -1,0 +1,4 @@
+.vscode/*
+*.db
+debug.log
+tree
