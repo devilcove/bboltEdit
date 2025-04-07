@@ -38,6 +38,16 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 				tree.GetRoot().CollapseAll()
 			case 'e':
 				tree.GetRoot().ExpandAll()
+			}
+		case tcell.ModCtrl:
+			switch event.Rune() {
+			case 'r':
+				reloadDB()
+				root.SetChildren(getNodes())
+				tree.SetRoot(root)
+			}
+		case tcell.ModNone:
+			switch event.Rune() {
 			case 'r':
 				log.Println("alt-r")
 				node := tree.GetCurrentNode()
@@ -53,14 +63,6 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 				rename := modal(node.GetText())
 				pager.AddPage("rename", rename, true, true)
 				return nil
-
-			}
-		case tcell.ModCtrl:
-			switch event.Rune() {
-			case 'r':
-				reloadDB()
-				root.SetChildren(getNodes())
-				tree.SetRoot(root)
 			}
 		}
 		return event
