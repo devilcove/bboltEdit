@@ -63,6 +63,17 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 				rename := modal(node.GetText())
 				pager.AddPage("rename", rename, true, true)
 				return nil
+			case 'd':
+				node := tree.GetCurrentNode()
+				if node.GetReference() == nil {
+					errDisp.SetText("cannot delete root node")
+					pager.ShowPage("error")
+					return nil
+				}
+				//ref := node.GetReference().([]string)
+				delete := delModal(node.GetText())
+				pager.AddPage("delete", delete, true, true)
+				return nil
 			}
 		}
 		return event
@@ -137,11 +148,48 @@ func renameForm(name string) *tview.Form {
 	return f
 }
 
+func deleteForm(name string) *tview.Form {
+	form := tview.NewForm()
+	form.AddTextView("name to delete", name, 20, 1, false, false)
+	form.AddButton("cancel", func() {
+		pager.HidePage("delete")
+	}).AddButton("delete", func() {
+		key := tree.GetCurrentNode().GetReference().([]string)
+		node, ok := dbNodes[strings.Join(key, " -> ")]
+		if !ok {
+			errDisp.SetText("no node: " + strings.Join(key, ":"))
+			pager.ShowPage("error").HidePage("delete")
+		}
+		if err := deleteEntry(node); err != nil {
+			errDisp.SetText(err.Error())
+			pager.ShowPage("error").HidePage("delete")
+		}
+		reloadDB()
+		root := tree.GetRoot()
+		root.SetChildren(getNodes())
+		tree.SetRoot(root)
+		newpath := node.path[:len(node.path)-1]
+		log.Println("newpath after delete", newpath, node.path)
+		selectNode(newpath)
+		pager.HidePage("delete")
+	})
+	form.SetBorder(true).SetTitle("Delete").SetTitleAlign(tview.AlignCenter)
+
+	return form
+}
+
 func modal(name string) tview.Primitive {
 	return tview.NewGrid().
 		SetColumns(0, 40, 0).
 		SetRows(0, 10, 0).
 		AddItem(renameForm(name), 1, 1, 1, 1, 0, 0, true)
+}
+
+func delModal(name string) tview.Primitive {
+	return tview.NewGrid().
+		SetColumns(0, 40, 0).
+		SetRows(0, 10, 0).
+		AddItem(deleteForm(name), 1, 1, 1, 1, 0, 0, true)
 }
 
 func selectNode(path []string) {

@@ -187,3 +187,38 @@ func getParentBucket(path []string, tx *bbolt.Tx) (*bbolt.Bucket, error) {
 	}
 	return bucket, nil
 }
+
+func deleteEntry(node dbNode) error {
+	if node.kind == "bucket" {
+		return deleteBucket(node)
+	}
+	return deleteKey(node)
+}
+
+func deleteBucket(node dbNode) error {
+	name := node.path[len(node.path)-1]
+	return db.Update(func(tx *bbolt.Tx) error {
+		parent, err := getParentBucket(node.path, tx)
+		if err != nil {
+			return err
+		}
+		if err := parent.DeleteBucket([]byte(name)); err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
+func deleteKey(node dbNode) error {
+	name := node.path[len(node.path)-1]
+	return db.Update(func(tx *bbolt.Tx) error {
+		parent, err := getParentBucket(node.path, tx)
+		if err != nil {
+			return err
+		}
+		if err := parent.Delete([]byte(name)); err != nil {
+			return err
+		}
+		return nil
+	})
+}
