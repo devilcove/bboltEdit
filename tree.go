@@ -60,7 +60,7 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 				ref := node.GetReference().([]string)
 				log.Println(ref)
 				log.Println(dbNodes[strings.Join(ref, " -> ")])
-				rename := modal(node.GetText())
+				rename := modal(renameForm(node.GetText()), 40, 10)
 				pager.AddPage("rename", rename, true, true)
 				return nil
 			case 'd':
@@ -70,15 +70,46 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 					pager.ShowPage("error")
 					return nil
 				}
-				//ref := node.GetReference().([]string)
-				delete := delModal(node.GetText())
+				delete := modal(deleteForm(node.GetText()), 40, 10)
 				pager.AddPage("delete", delete, true, true)
 				return nil
+			case 'e':
+				log.Println("e preessed: empty or edit")
+				node := tree.GetCurrentNode()
+				if node.GetReference() == nil {
+					errDisp.SetText("not applicable to root node")
+					pager.ShowPage("error")
+					return nil
+				}
+				log.Println(node)
+				ref := node.GetReference().([]string)
+				dbNode, ok := dbNodes[strings.Join(ref, " -> ")]
+				if !ok {
+					errDisp.SetText("invalid node")
+					pager.ShowPage("error")
+					return nil
+				}
+				log.Println(dbNode)
+				if dbNode.kind == "bucket" {
+					log.Println("empty bucket")
+					empty := modal(emptyForm(node.GetText()), 60, 10)
+					//empty := modal(renameForm(node.GetText()))
+					pager.AddPage("empty", empty, true, true)
+					log.Println("focus empty modal")
+					app.SetFocus(empty)
+					//return nil
+				} else {
+					log.Println("edit key")
+					edit := modal(editForm(node.GetText()), 40, 10)
+					pager.AddPage("edit", edit, true, true)
+					return nil
+				}
+
 			}
 		}
 		return event
 	})
-
+	tree.SetBorder(true).SetTitle("bbolt db viewer").SetTitleAlign(tview.AlignCenter)
 	return tree
 
 }
@@ -178,18 +209,78 @@ func deleteForm(name string) *tview.Form {
 	return form
 }
 
-func modal(name string) tview.Primitive {
-	return tview.NewGrid().
-		SetColumns(0, 40, 0).
-		SetRows(0, 10, 0).
-		AddItem(renameForm(name), 1, 1, 1, 1, 0, 0, true)
+// func emptyForm(name string) *tview.Grid {
+// 	first := tview.NewInputField().SetLabel("Bucket to empty ").SetText(name)
+// 	second := tview.NewTextView().SetLabel("press esc to cancel, enter to accept")
+// 	form := tview.NewGrid().
+// 		SetColumns(0, 40, 0).
+// 		SetRows(1, 1, 1).
+// 		//SetBorders(true).
+// 		AddItem(first, 1, 1, 1, 1, 0, 0, false).
+// 		AddItem(second, 3, 1, 1, 1, 0, 0, true)
+
+func emptyForm(name string) *tview.Form {
+	form := tview.NewForm()
+	text := tview.NewTextView().SetLabel("bucket:").SetText(name).SetSize(1, 20).SetScrollable(true)
+	text.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		log.Println("text key handler", event.Key())
+		if event.Key() == tcell.KeyEnter {
+			log.Println("empty bucket name")
+			node := getCurrentNode("empty")
+			if err := emptyBucket(node); err != nil {
+				errDisp.SetText(err.Error())
+				pager.ShowPage("error").HidePage("empty")
+				return nil
+			}
+			reloadAndSetSelection(node.path)
+			pager.RemovePage("empty")
+			app.SetFocus(tree)
+			return nil
+		}
+		return event
+	})
+	//text.SetBorder(true)
+	//form.AddInputField("bucket", name, 20, nil, nil)
+	//form.AddTextView("bucket", name, 0, 1, false, false)
+	form.AddTextView("", "", 1, 1, false, false)
+	form.AddFormItem(text)
+	form.AddTextView("", "esc -> cancel, enter -> accept", 40, 1, false, true)
+	//form.AddTextView("press esc to cancel,", "", 1, 1, false, false)
+	//form.AddTextView("enter to accept", "", 1, 1, false, false)
+
+	form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		log.Println("empty key handler", event.Key())
+
+		//if event.Key() == tcell.KeyEsc {
+		//	pager.HidePage("empty")
+		//	return nil
+		//}
+		return event
+	})
+	form.Box = tview.NewBox()
+	form.SetBorder(true).SetTitle("Empty Bucket").SetTitleAlign(tview.AlignCenter)
+
+	return form
 }
 
-func delModal(name string) tview.Primitive {
-	return tview.NewGrid().
-		SetColumns(0, 40, 0).
-		SetRows(0, 10, 0).
-		AddItem(deleteForm(name), 1, 1, 1, 1, 0, 0, true)
+func editForm(name string) *tview.Form {
+	form := tview.NewForm()
+	form.AddTextView("key to edit", name, 20, 1, false, false)
+	form.AddTextArea("value", "placeholder", 0, 0, 0, nil)
+	return form
+}
+
+func modal(p tview.Primitive, w, h int) tview.Primitive {
+	modal := tview.NewGrid().
+		SetColumns(0, w, 0).
+		SetRows(0, h, 0).
+		AddItem(p, 1, 1, 1, 1, 0, 0, true)
+	modal.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		log.Println("modal key handler", event.Key())
+		return event
+	})
+	return modal
+
 }
 
 func selectNode(path []string) {
@@ -213,4 +304,22 @@ func getChild(node *tview.TreeNode, name string) *tview.TreeNode {
 		}
 	}
 	return nil
+}
+
+func getCurrentNode(modal string) dbNode {
+	key := tree.GetCurrentNode().GetReference().([]string)
+	node, ok := dbNodes[strings.Join(key, " -> ")]
+	if !ok {
+		errDisp.SetText("no node: " + strings.Join(key, ":"))
+		pager.ShowPage("error").HidePage(modal)
+	}
+	return node
+}
+
+func reloadAndSetSelection(path []string) {
+	reloadDB()
+	root := tree.GetRoot()
+	root.SetChildren(getNodes())
+	tree.SetRoot(root)
+	selectNode(path)
 }

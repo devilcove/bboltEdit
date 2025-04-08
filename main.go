@@ -31,6 +31,7 @@ func main() {
 	help := help()
 	errDisp = errorView()
 	details := textArea("details")
+	details.SetBorder(true).SetTitle("Details").SetTitleAlign(tview.AlignCenter)
 	tree = newTree(details)
 	file := newFiles()
 
@@ -42,12 +43,20 @@ func main() {
 		AddItem(textView("press alt-? for help, ctrl-Q to quit"), 2, 0, 1, 2, 0, 0, false).
 		AddItem(tree, 1, 0, 1, 1, 0, 0, true).
 		AddItem(details, 1, 1, 1, 1, 0, 0, false)
+	grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		log.Println("grid key handler", event.Key())
+		return event
+	})
 
 	pager = tview.NewPages().
 		AddPage("main", grid, true, true).
 		AddPage("help", help, true, false).
 		AddPage("file", file, true, false).
 		AddPage("error", errDisp, true, false)
+	pager.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		log.Println("pager event handler", event.Key())
+		return event
+	})
 
 	help.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 		pager.HidePage("help")
@@ -81,6 +90,7 @@ func main() {
 				app.SetFocus(file)
 			}
 		}
+		log.Println("app key handling: passing ", event.Key())
 		return event
 	})
 

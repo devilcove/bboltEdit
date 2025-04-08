@@ -177,13 +177,19 @@ func renameBucket(node dbNode, value string) error {
 }
 
 func getParentBucket(path []string, tx *bbolt.Tx) (*bbolt.Bucket, error) {
-	bucket := &bbolt.Bucket{}
-	bucket = tx.Bucket([]byte(path[0]))
+	return getBucket(path[:len(path)-1], tx)
+}
+
+func getBucket(path []string, tx *bbolt.Tx) (*bbolt.Bucket, error) {
+	bucket := tx.Bucket([]byte(path[0]))
 	if bucket == nil {
-		return bucket, errors.New("invalid path: bucket does not exist")
+		return &bbolt.Bucket{}, errors.New("invalid path: bucket does not exit")
 	}
-	for _, p := range path[1 : len(path)-1] {
+	for _, p := range path[1:] {
 		bucket = bucket.Bucket([]byte(p))
+	}
+	if bucket == nil {
+		return &bbolt.Bucket{}, errors.New("invalid path: bucket does not exit")
 	}
 	return bucket, nil
 }
@@ -219,6 +225,22 @@ func deleteKey(node dbNode) error {
 		if err := parent.Delete([]byte(name)); err != nil {
 			return err
 		}
+		return nil
+	})
+}
+
+func emptyBucket(node dbNode) error {
+	return db.Update(func(tx *bbolt.Tx) error {
+		bucket, err := getBucket(node.path, tx)
+		if err != nil {
+			return err
+		}
+		err = bucket.ForEach(func(k, v []byte) error {
+			if k == nil {
+				return bucket.DeleteBucket(k)
+			}
+			return bucket.Delete(k)
+		})
 		return nil
 	})
 }
