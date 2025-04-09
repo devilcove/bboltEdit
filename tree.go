@@ -67,28 +67,21 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 				return nil
 
 			case 'e':
-				node := tree.GetCurrentNode()
-				if node.GetReference() == nil {
+				_, node := getCurrentNodes()
+				if node.path == nil {
 					errDisp.SetText("not applicable to root node")
 					pager.ShowPage("error")
 					return nil
 				}
-				ref := node.GetReference().([]string)
-				dbNode, ok := dbNodes[strings.Join(ref, " -> ")]
-				if !ok {
-					errDisp.SetText("invalid node")
-					pager.ShowPage("error")
-					return nil
-				}
-				if dbNode.kind == "bucket" {
-					empty := dialog(emptyForm(dbNode), 40, 7)
+				if node.kind == "bucket" {
+					empty := dialog(emptyForm(node, "empty"), 60, 7)
 					pager.AddPage("empty", empty, true, true)
 					log.Println("focus empty modal")
 					app.SetFocus(empty)
 					//return nil
 				} else {
 					log.Println("edit key")
-					edit := dialog(editForm(dbNode), 60, 20)
+					edit := dialog(editForm(node, "edit"), 60, 20)
 					pager.AddPage("edit", edit, true, true)
 					return nil
 				}

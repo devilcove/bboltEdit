@@ -97,21 +97,21 @@ func deleteForm(name string) *tview.Form {
 	return form
 }
 
-func emptyForm(node dbNode) *tview.Form {
+func emptyForm(node dbNode, dialog string) *tview.Form {
 	form := tview.NewForm().
-		AddTextView("name:", string(node.name), 0, 1, true, false).
+		AddTextView("path:", strings.Join(node.path, " "), 0, 1, true, true).
 		AddButton("Cancel", func() {
-			pager.RemovePage("empty")
+			pager.RemovePage(dialog)
 			app.SetFocus(tree)
 		}).
 		AddButton("Empty", func() {
 			if err := emptyBucket(node); err != nil {
 				errDisp.SetText(err.Error())
-				pager.ShowPage("error").RemovePage("empty")
+				pager.ShowPage("error").RemovePage(dialog)
 				return
 			}
 			reloadAndSetSelection(node.path)
-			pager.RemovePage("empty")
+			pager.RemovePage(dialog)
 			app.SetFocus(tree)
 		}).
 		SetButtonsAlign(tview.AlignCenter)
@@ -143,23 +143,22 @@ func moveForm(node dbNode) *tview.Form {
 	return form
 }
 
-func editForm(node dbNode) *tview.Form {
+func editForm(node dbNode, dialog string) *tview.Form {
 	form := tview.NewForm().
-		AddTextView("name:", string(node.name), 20, 1, true, false).
+		AddTextView("path:", strings.Join(node.path, " "), 0, 1, true, false).
 		AddTextArea("value:", string(node.value), 0, 12, 0, nil).
 		AddButton("cancel", func() {
-			pager.RemovePage("edit")
+			pager.RemovePage(dialog)
 			app.SetFocus(tree)
 		})
 	form.AddButton("Submit", func() {
-		log.Println("edit key", node.name, node.path)
 		if err := editNode(node, form.GetFormItem(1).(*tview.TextArea).GetText()); err != nil {
 			errDisp.SetText(err.Error())
-			pager.ShowPage("error").RemovePage("edit")
+			pager.ShowPage("error").RemovePage(dialog)
 			return
 		}
 		reloadAndSetSelection(node.path)
-		pager.RemovePage("edit")
+		pager.RemovePage(dialog)
 		app.SetFocus(tree)
 	})
 	form.SetButtonsAlign(tview.AlignCenter)
