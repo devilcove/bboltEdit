@@ -45,6 +45,31 @@ func addKeyForm(node dbNode) *tview.Form {
 	return form
 }
 
+func addBucketForm(node dbNode, dialogName string) *tview.Form {
+	form := tview.NewForm().
+		AddTextView("path:", strings.Join(node.path, " "), 0, 1, true, false).
+		AddInputField("name", "", 20, nil, nil).
+		AddButton("Cancel", func() {
+			pager.RemovePage(dialogName)
+			app.SetFocus(tree)
+		})
+	form.AddButton("Add", func() {
+		name := form.GetFormItem(1).(*tview.InputField).GetText()
+		if err := addBucket(node, name); err != nil {
+			errDisp.SetText(err.Error())
+			pager.ShowPage("error").HidePage(dialogName)
+			return
+		}
+		reloadAndSetSelection(append(node.path, name))
+		tree.GetCurrentNode().Expand()
+		pager.RemovePage(dialogName)
+		app.SetFocus(tree)
+	})
+	form.SetButtonsAlign(tview.AlignCenter).
+		SetBorder(true).SetTitle("Add Bucket").SetTitleAlign(tview.AlignCenter)
+	return form
+}
+
 func deleteForm(name string) *tview.Form {
 	form := tview.NewForm()
 	form.AddTextView("name:", name, 0, 1, false, false)
@@ -140,29 +165,5 @@ func editForm(node dbNode) *tview.Form {
 	form.SetButtonsAlign(tview.AlignCenter)
 	form.SetBorder(true).SetTitle("Edit Key").SetTitleAlign(tview.AlignCenter)
 	log.Println(tview.DefaultFormFieldHeight, tview.DefaultFormFieldWidth)
-	return form
-}
-
-func newBucketForm() *tview.Form {
-	form := tview.NewForm().
-		AddInputField("name:", "", 0, nil, nil).
-		AddButton("Cancel", func() {
-			pager.RemovePage("bucket")
-			app.SetFocus(tree)
-		}).
-		SetButtonsAlign(tview.AlignCenter)
-	form.AddButton("Submit", func() {
-		name := form.GetFormItem(0).(*tview.InputField).GetText()
-		node := getCurrentNode("bucket")
-		if err := addBucket(node, name); err != nil {
-			errDisp.SetText(err.Error())
-			pager.ShowPage("error").RemovePage("bucket")
-			return
-		}
-		reloadAndSetSelection(append(node.path, name))
-		pager.RemovePage("bucket")
-		app.SetFocus(tree)
-	})
-	form.SetBorder(true).SetTitle("Add Bucket").SetTitleAlign(tview.AlignCenter)
 	return form
 }

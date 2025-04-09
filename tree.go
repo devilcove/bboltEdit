@@ -50,7 +50,8 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 			switch event.Rune() {
 
 			case 'b':
-				bucket := dialog(newBucketForm(), 40, 7)
+				_, node := getCurrentNodes()
+				bucket := dialog(addBucketForm(node, "bucket"), 40, 10)
 				pager.AddPage("bucket", bucket, true, true)
 				return nil
 
