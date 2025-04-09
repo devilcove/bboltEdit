@@ -274,3 +274,39 @@ func addKey(node dbNode, name, value string) error {
 		return bucket.Put([]byte(name), []byte(value))
 	})
 }
+
+func moveItem(node dbNode, newpath []string) error {
+	if node.kind == "bucket" {
+		return moveBucket(node, newpath)
+	}
+	return moveKey(node, newpath)
+}
+
+func moveKey(node dbNode, path []string) error {
+	return db.Update(func(tx *bbolt.Tx) error {
+		parent, err := getParentBucket(node.path, tx)
+		if err != nil {
+			return err
+		}
+		if err := parent.Delete(node.name); err != nil {
+			return err
+		}
+		//create root bucket if needed
+		bucket, err := tx.CreateBucketIfNotExists([]byte(path[0]))
+		if err != nil {
+			return err
+		}
+		// create nested bucket if needed
+		for _, p := range path[1 : len(path)-1] {
+			bucket, err = bucket.CreateBucketIfNotExists([]byte(p))
+			if err != nil {
+				return err
+			}
+		}
+		return bucket.Put([]byte(path[len(path)-1]), []byte(node.value))
+	})
+}
+
+func moveBucket(node dbNode, path []string) error {
+	return errors.New("not yet implemented")
+}

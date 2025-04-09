@@ -108,6 +108,23 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 				pager.AddPage("key", key, true, true)
 				return nil
 
+			case 'm':
+				node := tree.GetCurrentNode()
+				if node.GetReference() == nil {
+					errDisp.SetText("cannot move root node")
+					pager.ShowPage("error")
+					return nil
+				}
+				ref := node.GetReference().([]string)
+				dbNode, ok := dbNodes[strings.Join(ref, " -> ")]
+				if !ok {
+					errDisp.SetText("invalid node")
+					pager.ShowPage("error")
+					return nil
+				}
+				move := modal(moveForm(dbNode), 40, 10)
+				pager.AddPage("move", move, true, true)
+
 			case 'r':
 				node := tree.GetCurrentNode()
 				if node.GetReference() == nil {
