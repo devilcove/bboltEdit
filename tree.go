@@ -48,21 +48,12 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 			}
 		case tcell.ModNone:
 			switch event.Rune() {
-			case 'r':
-				log.Println("alt-r")
-				node := tree.GetCurrentNode()
-				if node.GetReference() == nil {
-					errDisp.SetText("cannot rename root node")
-					pager.ShowPage("error")
-					return nil
-				}
-				log.Println(node.GetReference(), node.GetLevel(), node.GetText())
-				ref := node.GetReference().([]string)
-				log.Println(ref)
-				log.Println(dbNodes[strings.Join(ref, " -> ")])
-				rename := modal(renameForm(node.GetText()), 40, 10)
-				pager.AddPage("rename", rename, true, true)
+
+			case 'b':
+				bucket := modal(newBucketForm(), 40, 10)
+				pager.AddPage("bucket", bucket, true, true)
 				return nil
+
 			case 'd':
 				node := tree.GetCurrentNode()
 				if node.GetReference() == nil {
@@ -73,6 +64,7 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 				delete := modal(deleteForm(node.GetText()), 40, 10)
 				pager.AddPage("delete", delete, true, true)
 				return nil
+
 			case 'e':
 				log.Println("e preessed: empty or edit")
 				node := tree.GetCurrentNode()
@@ -104,6 +96,32 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 					pager.AddPage("edit", edit, true, true)
 					return nil
 				}
+			case 'k':
+				node := tree.GetCurrentNode()
+				if node.GetReference() == nil {
+					errDisp.SetText("cannot rename root node")
+					pager.ShowPage("error")
+					return nil
+				}
+				//reference := node.GetReference().([]string)
+				key := modal(addKeyForm(), 40, 20)
+				pager.AddPage("key", key, true, true)
+				return nil
+
+			case 'r':
+				node := tree.GetCurrentNode()
+				if node.GetReference() == nil {
+					errDisp.SetText("cannot rename root node")
+					pager.ShowPage("error")
+					return nil
+				}
+				log.Println(node.GetReference(), node.GetLevel(), node.GetText())
+				ref := node.GetReference().([]string)
+				log.Println(ref)
+				log.Println(dbNodes[strings.Join(ref, " -> ")])
+				rename := modal(renameForm(node.GetText()), 40, 10)
+				pager.AddPage("rename", rename, true, true)
+				return nil
 
 			}
 		}
@@ -209,15 +227,76 @@ func deleteForm(name string) *tview.Form {
 	return form
 }
 
-// func emptyForm(name string) *tview.Grid {
-// 	first := tview.NewInputField().SetLabel("Bucket to empty ").SetText(name)
-// 	second := tview.NewTextView().SetLabel("press esc to cancel, enter to accept")
-// 	form := tview.NewGrid().
-// 		SetColumns(0, 40, 0).
-// 		SetRows(1, 1, 1).
-// 		//SetBorders(true).
-// 		AddItem(first, 1, 1, 1, 1, 0, 0, false).
-// 		AddItem(second, 3, 1, 1, 1, 0, 0, true)
+//	func emptyForm(name string) *tview.Grid {
+//		first := tview.NewInputField().SetLabel("Bucket to empty ").SetText(name)
+//		second := tview.NewTextView().SetLabel("press esc to cancel, enter to accept")
+//		form := tview.NewGrid().
+//			SetColumns(0, 40, 0).
+//			SetRows(1, 1, 1).
+//			//SetBorders(true).
+//			AddItem(first, 1, 1, 1, 1, 0, 0, false).
+//			AddItem(second, 3, 1, 1, 1, 0, 0, true)
+
+func addKeyForm() *tview.Form {
+	form := tview.NewForm().
+		AddInputField("name", "", 20, nil, nil).
+		AddTextArea("value", "", 0, 0, 0, nil).
+		AddButton("Cancel", func() {
+			pager.RemovePage("key")
+			app.SetFocus(tree)
+		})
+	form.AddButton("Submit", func() {
+		name := form.GetFormItem(0).(*tview.InputField).GetText()
+		value := form.GetFormItem(1).(*tview.TextArea).GetText()
+		node := getCurrentNode("key")
+		if err := addKey(node, name, value); err != nil {
+			errDisp.SetText(err.Error())
+			pager.ShowPage("error").HidePage("key")
+			return
+		}
+		reloadAndSetSelection(node.path)
+		tree.GetCurrentNode().Expand()
+		pager.RemovePage("key")
+		app.SetFocus(tree)
+	})
+	form.SetButtonsAlign(tview.AlignCenter).
+		SetBorder(true).SetTitle("Add Key").SetTitleAlign(tview.AlignCenter)
+
+	return form
+}
+
+func newBucketForm() *tview.Form {
+	form := tview.NewForm().AddTextView("", "", 1, 1, false, false)
+	input := tview.NewInputField().SetLabel("name").SetFieldWidth(0)
+	input.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		log.Println("add bucket key handler", event.Key())
+		if event.Key() == tcell.KeyEnter {
+			log.Println("add bucket", input.GetText())
+			node := getCurrentNode("bucket")
+			if err := addBucket(node, input.GetText()); err != nil {
+				errDisp.SetText(err.Error())
+				pager.ShowPage("error").HidePage("bucket")
+				return nil
+			}
+			reloadAndSetSelection(node.path)
+			tree.GetCurrentNode().Expand()
+			pager.RemovePage("bucket")
+			app.SetFocus(tree)
+			return nil
+		}
+		return event
+	})
+	form.AddFormItem(input)
+	form.AddTextView("", "esc -> cancel, enter -> accept", 40, 1, false, true)
+	form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		log.Println("empty key handler", event.Key())
+		return event
+	})
+	form.Box = tview.NewBox()
+	form.SetBorder(true).SetTitle("Add Bucket").SetTitleAlign(tview.AlignCenter)
+
+	return form
+}
 
 func emptyForm(name string) *tview.Form {
 	form := tview.NewForm()
@@ -239,22 +318,12 @@ func emptyForm(name string) *tview.Form {
 		}
 		return event
 	})
-	//text.SetBorder(true)
-	//form.AddInputField("bucket", name, 20, nil, nil)
-	//form.AddTextView("bucket", name, 0, 1, false, false)
 	form.AddTextView("", "", 1, 1, false, false)
 	form.AddFormItem(text)
 	form.AddTextView("", "esc -> cancel, enter -> accept", 40, 1, false, true)
-	//form.AddTextView("press esc to cancel,", "", 1, 1, false, false)
-	//form.AddTextView("enter to accept", "", 1, 1, false, false)
 
 	form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		log.Println("empty key handler", event.Key())
-
-		//if event.Key() == tcell.KeyEsc {
-		//	pager.HidePage("empty")
-		//	return nil
-		//}
 		return event
 	})
 	form.Box = tview.NewBox()
@@ -307,6 +376,9 @@ func getChild(node *tview.TreeNode, name string) *tview.TreeNode {
 }
 
 func getCurrentNode(modal string) dbNode {
+	if tree.GetCurrentNode().GetReference() == nil {
+		return dbNode{}
+	}
 	key := tree.GetCurrentNode().GetReference().([]string)
 	node, ok := dbNodes[strings.Join(key, " -> ")]
 	if !ok {

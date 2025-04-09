@@ -244,3 +244,33 @@ func emptyBucket(node dbNode) error {
 		return nil
 	})
 }
+
+func addBucket(node dbNode, name string) error {
+	return db.Update(func(tx *bbolt.Tx) error {
+		if node.path == nil {
+			if _, err := tx.CreateBucket([]byte(name)); err != nil {
+				return err
+			}
+			return nil
+		}
+		bucket, err := getBucket(node.path, tx)
+		if err != nil {
+			return err
+		}
+		_, err = bucket.CreateBucket([]byte(name))
+		return err
+	})
+}
+
+func addKey(node dbNode, name, value string) error {
+	return db.Update(func(tx *bbolt.Tx) error {
+		bucket, err := getBucket(node.path, tx)
+		if err != nil {
+			return err
+		}
+		if bucket.Get([]byte(name)) != nil {
+			return errors.New("key exists")
+		}
+		return bucket.Put([]byte(name), []byte(value))
+	})
+}
