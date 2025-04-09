@@ -18,6 +18,33 @@ func dialog(p tview.Primitive, w, h int) tview.Primitive {
 		AddItem(nil, 0, 1, false)
 }
 
+func addKeyForm(node dbNode) *tview.Form {
+	form := tview.NewForm().
+		AddTextView("path:", strings.Join(node.path, " "), 0, 1, true, false).
+		AddInputField("name", "", 20, nil, nil).
+		AddTextArea("value", "", 0, 12, 0, nil).
+		AddButton("Cancel", func() {
+			pager.RemovePage("key")
+			app.SetFocus(tree)
+		})
+	form.AddButton("Add", func() {
+		name := form.GetFormItem(1).(*tview.InputField).GetText()
+		value := form.GetFormItem(2).(*tview.TextArea).GetText()
+		if err := addKey(node, name, value); err != nil {
+			errDisp.SetText(err.Error())
+			pager.ShowPage("error").HidePage("key")
+			return
+		}
+		reloadAndSetSelection(append(node.path, name))
+		tree.GetCurrentNode().Expand()
+		pager.RemovePage("key")
+		app.SetFocus(tree)
+	})
+	form.SetButtonsAlign(tview.AlignCenter).
+		SetBorder(true).SetTitle("Add Key").SetTitleAlign(tview.AlignCenter)
+	return form
+}
+
 func deleteForm(name string) *tview.Form {
 	form := tview.NewForm()
 	form.AddTextView("name:", name, 0, 1, false, false)

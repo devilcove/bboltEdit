@@ -91,15 +91,15 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 					pager.AddPage("edit", edit, true, true)
 					return nil
 				}
+
 			case 'k':
-				node := tree.GetCurrentNode()
-				if node.GetReference() == nil {
-					errDisp.SetText("cannot rename root node")
+				_, node := getCurrentNodes()
+				if node.path == nil {
+					errDisp.SetText("cannot add key to root")
 					pager.ShowPage("error")
 					return nil
 				}
-				//reference := node.GetReference().([]string)
-				key := modal(addKeyForm(), 40, 20)
+				key := modal(addKeyForm(node), 60, 22)
 				pager.AddPage("key", key, true, true)
 				return nil
 
@@ -219,34 +219,6 @@ func renameForm(name string) *tview.Form {
 //			AddItem(first, 1, 1, 1, 1, 0, 0, false).
 //			AddItem(second, 3, 1, 1, 1, 0, 0, true)
 
-func addKeyForm() *tview.Form {
-	form := tview.NewForm().
-		AddInputField("name", "", 20, nil, nil).
-		AddTextArea("value", "", 0, 0, 0, nil).
-		AddButton("Cancel", func() {
-			pager.RemovePage("key")
-			app.SetFocus(tree)
-		})
-	form.AddButton("Submit", func() {
-		name := form.GetFormItem(0).(*tview.InputField).GetText()
-		value := form.GetFormItem(1).(*tview.TextArea).GetText()
-		node := getCurrentNode("key")
-		if err := addKey(node, name, value); err != nil {
-			errDisp.SetText(err.Error())
-			pager.ShowPage("error").HidePage("key")
-			return
-		}
-		reloadAndSetSelection(node.path)
-		tree.GetCurrentNode().Expand()
-		pager.RemovePage("key")
-		app.SetFocus(tree)
-	})
-	form.SetButtonsAlign(tview.AlignCenter).
-		SetBorder(true).SetTitle("Add Key").SetTitleAlign(tview.AlignCenter)
-
-	return form
-}
-
 func modal(p tview.Primitive, w, h int) tview.Primitive {
 	modal := tview.NewGrid().
 		SetColumns(0, w, 0).
@@ -302,4 +274,21 @@ func reloadAndSetSelection(path []string) {
 	root.SetChildren(getNodes())
 	tree.SetRoot(root)
 	selectNode(path)
+}
+
+func getCurrentNodes() (*tview.TreeNode, dbNode) {
+	treeNode := tree.GetCurrentNode()
+	reference := treeNode.GetReference()
+	if reference == nil {
+		return treeNode, dbNode{
+			path: nil,
+			kind: "bucket",
+		}
+	}
+	path := reference.([]string)
+	node, ok := dbNodes[strings.Join(path, " -> ")]
+	if !ok {
+		log.Println("involid node", path)
+	}
+	return treeNode, node
 }
