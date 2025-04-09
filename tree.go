@@ -111,7 +111,7 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 					pager.ShowPage("error")
 					return nil
 				}
-				move := modal(moveForm(dbNode), 40, 10)
+				move := modal(moveForm(dbNode), 60, 10)
 				pager.AddPage("move", move, true, true)
 
 			case 'r':

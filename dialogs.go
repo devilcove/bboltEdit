@@ -122,15 +122,17 @@ func emptyForm(node dbNode, dialog string) *tview.Form {
 func moveForm(node dbNode) *tview.Form {
 	currentPath := strings.Join(node.path, " ")
 	form := tview.NewForm().
-		AddTextView("current path", currentPath, 40, 2, true, true).
-		AddInputField("new path", currentPath, 40, nil, nil).
+		AddTextView("current path", currentPath, 0, 1, true, true).
+		AddInputField("new path", currentPath, 0, nil, nil).
 		AddButton("Cancel", func() {
 			pager.RemovePage("move")
 			app.SetFocus(tree)
-		})
+		}).
+		SetButtonsAlign(tview.AlignCenter)
 	form.AddButton("Submit", func() {
 		newpath := strings.Split(form.GetFormItem(1).(*tview.InputField).GetText(), " ")
 		node := getCurrentNode("move")
+		log.Println("moving from", node.path, "to", newpath)
 		if err := moveItem(node, newpath); err != nil {
 			errDisp.SetText(err.Error())
 			pager.ShowPage("error").RemovePage("move")
@@ -140,6 +142,7 @@ func moveForm(node dbNode) *tview.Form {
 		pager.RemovePage("move")
 		app.SetFocus(tree)
 	})
+	form.SetBorder(true).SetTitle("Move Item").SetTitleAlign(tview.AlignCenter)
 	return form
 }
 

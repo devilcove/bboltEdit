@@ -300,6 +300,9 @@ func moveItem(node dbNode, newpath []string) error {
 }
 
 func moveKey(node dbNode, path []string) error {
+	if len(path) < 2 {
+		return errors.New("invalid path, destination too short")
+	}
 	return db.Update(func(tx *bbolt.Tx) error {
 		parent, err := getParentBucket(node.path, tx)
 		if err != nil {
@@ -309,7 +312,7 @@ func moveKey(node dbNode, path []string) error {
 			return err
 		}
 
-		bucket, err := createParentBucket(path[:len(path)-1], tx)
+		bucket, err := createParentBucket(path, tx)
 		if err != nil {
 			return err
 		}
