@@ -84,7 +84,7 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 				log.Println(dbNode)
 				if dbNode.kind == "bucket" {
 					log.Println("empty bucket")
-					empty := modal(emptyForm(node.GetText()), 60, 10)
+					empty := modal(emptyForm(node.GetText()), 1, 1)
 					//empty := modal(renameForm(node.GetText()))
 					pager.AddPage("empty", empty, true, true)
 					log.Println("focus empty modal")
@@ -92,7 +92,7 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 					//return nil
 				} else {
 					log.Println("edit key")
-					edit := modal(editForm(node.GetText()), 40, 10)
+					edit := modal(editForm(dbNode), 40, 40)
 					pager.AddPage("edit", edit, true, true)
 					return nil
 				}
@@ -346,13 +346,6 @@ func emptyForm(name string) *tview.Form {
 	form.Box = tview.NewBox()
 	form.SetBorder(true).SetTitle("Empty Bucket").SetTitleAlign(tview.AlignCenter)
 
-	return form
-}
-
-func editForm(name string) *tview.Form {
-	form := tview.NewForm()
-	form.AddTextView("key to edit", name, 20, 1, false, false)
-	form.AddTextArea("value", "placeholder", 0, 0, 0, nil)
 	return form
 }
 

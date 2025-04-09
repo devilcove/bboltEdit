@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"strings"
 
 	"github.com/rivo/tview"
@@ -27,5 +28,30 @@ func moveForm(node dbNode) *tview.Form {
 		pager.RemovePage("move")
 		app.SetFocus(tree)
 	})
+	return form
+}
+
+func editForm(node dbNode) *tview.Form {
+	form := tview.NewForm().
+		AddTextView("name:", string(node.name), 20, 1, true, false).
+		AddTextArea("value:", string(node.value), 0, 0, 0, nil).
+		AddButton("cancel", func() {
+			pager.RemovePage("edit")
+			app.SetFocus(tree)
+		})
+	form.AddButton("Submit", func() {
+		log.Println("edit key", node.name, node.path)
+		if err := editNode(node, form.GetFormItem(1).(*tview.TextArea).GetText()); err != nil {
+			errDisp.SetText(err.Error())
+			pager.ShowPage("error").RemovePage("edit")
+			return
+		}
+		reloadAndSetSelection(node.path)
+		pager.RemovePage("edit")
+		app.SetFocus(tree)
+	})
+	form.SetButtonsAlign(tview.AlignCenter)
+	form.SetBorder(true).SetTitle("Edit Key").SetTitleAlign(tview.AlignCenter)
+	log.Println(tview.DefaultFormFieldHeight, tview.DefaultFormFieldWidth)
 	return form
 }

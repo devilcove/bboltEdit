@@ -309,7 +309,7 @@ func moveKey(node dbNode, path []string) error {
 			return err
 		}
 
-		bucket, err := createBucket(path[:len(path)-1], tx)
+		bucket, err := createParentBucket(path[:len(path)-1], tx)
 		if err != nil {
 			return err
 		}
@@ -368,4 +368,14 @@ func createBucket(path []string, tx *bbolt.Tx) (*bbolt.Bucket, error) {
 		}
 	}
 	return bucket, nil
+}
+
+func editNode(node dbNode, update string) error {
+	return db.Update(func(tx *bbolt.Tx) error {
+		bucket, err := getParentBucket(node.path, tx)
+		if err != nil {
+			return err
+		}
+		return bucket.Put(node.name, []byte(update))
+	})
 }
