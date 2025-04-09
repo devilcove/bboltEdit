@@ -45,6 +45,28 @@ func deleteForm(name string) *tview.Form {
 	return form
 }
 
+func emptyForm(node dbNode) *tview.Form {
+	form := tview.NewForm().
+		AddTextView("name:", string(node.name), 0, 1, true, false).
+		AddButton("Cancel", func() {
+			pager.RemovePage("empty")
+			app.SetFocus(tree)
+		}).
+		AddButton("Empty", func() {
+			if err := emptyBucket(node); err != nil {
+				errDisp.SetText(err.Error())
+				pager.ShowPage("error").RemovePage("empty")
+				return
+			}
+			reloadAndSetSelection(node.path)
+			pager.RemovePage("empty")
+			app.SetFocus(tree)
+		}).
+		SetButtonsAlign(tview.AlignCenter)
+	form.SetBorder(true).SetTitle("Empty Bucket").SetTitleAlign(tview.AlignCenter)
+	return form
+}
+
 func moveForm(node dbNode) *tview.Form {
 	currentPath := strings.Join(node.path, " ")
 	form := tview.NewForm().

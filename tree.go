@@ -66,14 +66,12 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 				return nil
 
 			case 'e':
-				log.Println("e preessed: empty or edit")
 				node := tree.GetCurrentNode()
 				if node.GetReference() == nil {
 					errDisp.SetText("not applicable to root node")
 					pager.ShowPage("error")
 					return nil
 				}
-				log.Println(node)
 				ref := node.GetReference().([]string)
 				dbNode, ok := dbNodes[strings.Join(ref, " -> ")]
 				if !ok {
@@ -81,11 +79,8 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 					pager.ShowPage("error")
 					return nil
 				}
-				log.Println(dbNode)
 				if dbNode.kind == "bucket" {
-					log.Println("empty bucket")
-					empty := modal(emptyForm(node.GetText()), 1, 1)
-					//empty := modal(renameForm(node.GetText()))
+					empty := dialog(emptyForm(dbNode), 40, 7)
 					pager.AddPage("empty", empty, true, true)
 					log.Println("focus empty modal")
 					app.SetFocus(empty)
@@ -248,40 +243,6 @@ func addKeyForm() *tview.Form {
 	})
 	form.SetButtonsAlign(tview.AlignCenter).
 		SetBorder(true).SetTitle("Add Key").SetTitleAlign(tview.AlignCenter)
-
-	return form
-}
-
-func emptyForm(name string) *tview.Form {
-	form := tview.NewForm()
-	text := tview.NewTextView().SetLabel("bucket:").SetText(name).SetSize(1, 20).SetScrollable(true)
-	text.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		log.Println("text key handler", event.Key())
-		if event.Key() == tcell.KeyEnter {
-			log.Println("empty bucket name")
-			node := getCurrentNode("empty")
-			if err := emptyBucket(node); err != nil {
-				errDisp.SetText(err.Error())
-				pager.ShowPage("error").HidePage("empty")
-				return nil
-			}
-			reloadAndSetSelection(node.path)
-			pager.RemovePage("empty")
-			app.SetFocus(tree)
-			return nil
-		}
-		return event
-	})
-	form.AddTextView("", "", 1, 1, false, false)
-	form.AddFormItem(text)
-	form.AddTextView("", "esc -> cancel, enter -> accept", 40, 1, false, true)
-
-	form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		log.Println("empty key handler", event.Key())
-		return event
-	})
-	form.Box = tview.NewBox()
-	form.SetBorder(true).SetTitle("Empty Bucket").SetTitleAlign(tview.AlignCenter)
 
 	return form
 }
