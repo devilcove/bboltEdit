@@ -50,7 +50,7 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 			switch event.Rune() {
 
 			case 'b':
-				bucket := modal(newBucketForm(), 40, 10)
+				bucket := dialog(newBucketForm(), 40, 7)
 				pager.AddPage("bucket", bucket, true, true)
 				return nil
 
@@ -92,7 +92,7 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 					//return nil
 				} else {
 					log.Println("edit key")
-					edit := modal(editForm(dbNode), 40, 40)
+					edit := dialog(editForm(dbNode), 60, 20)
 					pager.AddPage("edit", edit, true, true)
 					return nil
 				}
@@ -278,39 +278,6 @@ func addKeyForm() *tview.Form {
 	})
 	form.SetButtonsAlign(tview.AlignCenter).
 		SetBorder(true).SetTitle("Add Key").SetTitleAlign(tview.AlignCenter)
-
-	return form
-}
-
-func newBucketForm() *tview.Form {
-	form := tview.NewForm().AddTextView("", "", 1, 1, false, false)
-	input := tview.NewInputField().SetLabel("name").SetFieldWidth(0)
-	input.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		log.Println("add bucket key handler", event.Key())
-		if event.Key() == tcell.KeyEnter {
-			log.Println("add bucket", input.GetText())
-			node := getCurrentNode("bucket")
-			if err := addBucket(node, input.GetText()); err != nil {
-				errDisp.SetText(err.Error())
-				pager.ShowPage("error").HidePage("bucket")
-				return nil
-			}
-			reloadAndSetSelection(node.path)
-			tree.GetCurrentNode().Expand()
-			pager.RemovePage("bucket")
-			app.SetFocus(tree)
-			return nil
-		}
-		return event
-	})
-	form.AddFormItem(input)
-	form.AddTextView("", "esc -> cancel, enter -> accept", 40, 1, false, true)
-	form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		log.Println("empty key handler", event.Key())
-		return event
-	})
-	form.Box = tview.NewBox()
-	form.SetBorder(true).SetTitle("Add Bucket").SetTitleAlign(tview.AlignCenter)
 
 	return form
 }
