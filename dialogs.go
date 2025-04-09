@@ -18,6 +18,33 @@ func dialog(p tview.Primitive, w, h int) tview.Primitive {
 		AddItem(nil, 0, 1, false)
 }
 
+func deleteForm(name string) *tview.Form {
+	form := tview.NewForm()
+	form.AddTextView("name:", name, 0, 1, false, false)
+	form.AddButton("Cancel", func() {
+		pager.HidePage("delete")
+	}).AddButton("Delete", func() {
+		key := tree.GetCurrentNode().GetReference().([]string)
+		node, ok := dbNodes[strings.Join(key, " -> ")]
+		if !ok {
+			errDisp.SetText("no node: " + strings.Join(key, ":"))
+			pager.ShowPage("error").HidePage("delete")
+		}
+		if err := deleteEntry(node); err != nil {
+			errDisp.SetText(err.Error())
+			pager.ShowPage("error").HidePage("delete")
+		}
+		newpath := node.path[:len(node.path)-1]
+		reloadAndSetSelection(newpath)
+		selectNode(newpath)
+		tree.GetCurrentNode().Expand()
+		pager.HidePage("delete")
+	}).
+		SetButtonsAlign(tview.AlignCenter)
+	form.SetBorder(true).SetTitle("Delete Item").SetTitleAlign(tview.AlignCenter)
+	return form
+}
+
 func moveForm(node dbNode) *tview.Form {
 	currentPath := strings.Join(node.path, " ")
 	form := tview.NewForm().

@@ -225,10 +225,10 @@ func deleteBucket(node dbNode) error {
 		if err != nil {
 			return err
 		}
-		if err := parent.DeleteBucket([]byte(name)); err != nil {
-			return err
+		if parent == nil {
+			return tx.DeleteBucket([]byte(name))
 		}
-		return nil
+		return parent.DeleteBucket([]byte(name))
 	})
 }
 
