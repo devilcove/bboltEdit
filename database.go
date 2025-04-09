@@ -141,26 +141,33 @@ func renameKey(node dbNode, value string) error {
 
 }
 
-func renameBucket(node dbNode, value string) error {
+func renameBucket(node dbNode, name string) error {
+	newBucket := &bbolt.Bucket{}
+	oldBucket := &bbolt.Bucket{}
 	oldName := node.path[len(node.path)-1]
-	if db == nil {
-		return errors.New("database not open")
-	}
 	err := db.Update(func(tx *bbolt.Tx) error {
 		b, err := getParentBucket(node.path, tx)
 		if err != nil {
 			return err
 		}
-		newB, err := b.CreateBucket([]byte(value))
-		if err != nil {
-			return err
+		if b == nil {
+			newBucket, err = tx.CreateBucket([]byte(name))
+			if err != nil {
+				return err
+			}
+			oldBucket = tx.Bucket([]byte(oldName))
+		} else {
+			newBucket, err = b.CreateBucket([]byte(name))
+			if err != nil {
+				return err
+			}
+			oldBucket = b.Bucket([]byte(oldName))
+			if oldBucket == nil {
+				return errors.New("invalid path: bucket does not exist")
+			}
 		}
-		oldB := b.Bucket([]byte(oldName))
-		if oldB == nil {
-			return errors.New("invalid path: bucket does not exist")
-		}
-		err = oldB.ForEach(func(k, v []byte) error {
-			if err := newB.Put(k, v); err != nil {
+		err = oldBucket.ForEach(func(k, v []byte) error {
+			if err := newBucket.Put(k, v); err != nil {
 				return err
 			}
 			return nil
@@ -168,8 +175,14 @@ func renameBucket(node dbNode, value string) error {
 		if err != nil {
 			return err
 		}
-		if err := b.DeleteBucket([]byte(oldName)); err != nil {
-			return err
+		if b == nil {
+			if err := tx.DeleteBucket([]byte(oldName)); err != nil {
+				return err
+			}
+		} else {
+			if err := b.DeleteBucket([]byte(oldName)); err != nil {
+				return err
+			}
 		}
 		return nil
 	})
@@ -177,6 +190,10 @@ func renameBucket(node dbNode, value string) error {
 }
 
 func getParentBucket(path []string, tx *bbolt.Tx) (*bbolt.Bucket, error) {
+	if len(path) == 1 {
+		//parent is root
+		return nil, nil
+	}
 	return getBucket(path[:len(path)-1], tx)
 }
 
@@ -291,22 +308,64 @@ func moveKey(node dbNode, path []string) error {
 		if err := parent.Delete(node.name); err != nil {
 			return err
 		}
-		//create root bucket if needed
-		bucket, err := tx.CreateBucketIfNotExists([]byte(path[0]))
+
+		bucket, err := createBucket(path[:len(path)-1], tx)
 		if err != nil {
 			return err
-		}
-		// create nested bucket if needed
-		for _, p := range path[1 : len(path)-1] {
-			bucket, err = bucket.CreateBucketIfNotExists([]byte(p))
-			if err != nil {
-				return err
-			}
 		}
 		return bucket.Put([]byte(path[len(path)-1]), []byte(node.value))
 	})
 }
 
 func moveBucket(node dbNode, path []string) error {
-	return errors.New("not yet implemented")
+	newname := path[len(path)-1]
+	if newname != string(node.name) {
+		//need to rename node first
+		if err := renameBucket(node, newname); err != nil {
+			return err
+		}
+		node.name = []byte(newname)
+	}
+	return db.Update(func(tx *bbolt.Tx) error {
+		parent, err := getParentBucket(node.path, tx)
+		if err != nil {
+			return err
+		}
+		newparent, err := createParentBucket(path, tx)
+		if err != nil {
+			return err
+		}
+		if parent == newparent {
+			// this is a rename operation already done above
+			return nil
+		}
+		return tx.MoveBucket([]byte(node.name), parent, newparent)
+	})
+}
+
+func createParentBucket(path []string, tx *bbolt.Tx) (*bbolt.Bucket, error) {
+	if len(path) == 1 {
+		return nil, nil
+	}
+	return createBucket(path[:len(path)-1], tx)
+
+}
+
+func createBucket(path []string, tx *bbolt.Tx) (*bbolt.Bucket, error) {
+	if path == nil {
+		return nil, errors.New("invalid path")
+	}
+	//create root bucket
+	bucket, err := tx.CreateBucketIfNotExists([]byte(path[0]))
+	if err != nil {
+		return nil, err
+	}
+	// create nested bucket(s)
+	for _, p := range path[1:] {
+		bucket, err = bucket.CreateBucketIfNotExists([]byte(p))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return bucket, nil
 }
