@@ -236,7 +236,7 @@ func emptyBucket(node dbNode) error {
 			return err
 		}
 		err = bucket.ForEach(func(k, v []byte) error {
-			if k == nil {
+			if v == nil {
 				return bucket.DeleteBucket(k)
 			}
 			return bucket.Delete(k)
