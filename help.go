@@ -5,7 +5,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-func help() *tview.Modal {
+func helpView() *tview.Modal {
 	return tview.NewModal().
 		SetText("This would be the help menu").
 		AddButtons([]string{"Close"}).

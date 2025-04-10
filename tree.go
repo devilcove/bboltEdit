@@ -117,6 +117,9 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 				pager.AddPage("rename", rename, true, true)
 				return nil
 
+			case '?':
+				pager.ShowPage("help")
+				app.SetFocus(help)
 			}
 		}
 		return event

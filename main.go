@@ -16,6 +16,7 @@ var (
 	app     *tview.Application
 	errDisp *tview.Modal
 	header  *tview.TextView
+	help    *tview.Modal
 	pager   *tview.Pages
 	tree    *tview.TreeView
 )
@@ -28,7 +29,7 @@ func main() {
 		panic(err)
 	}
 
-	help := help()
+	help = helpView()
 	errDisp = errorView()
 	details := textArea("details")
 	details.SetBorder(true).SetTitle("Details").SetTitleAlign(tview.AlignCenter)
@@ -40,7 +41,7 @@ func main() {
 		SetColumns(0, 0).
 		SetBorders(true).
 		AddItem(header, 0, 0, 1, 2, 0, 0, false).
-		AddItem(textView("press alt-? for help, ctrl-Q to quit"), 2, 0, 1, 2, 0, 0, false).
+		AddItem(textView("press ? for help, esc or ctrl-Q to quit"), 2, 0, 1, 2, 0, 0, false).
 		AddItem(tree, 1, 0, 1, 1, 0, 0, true).
 		AddItem(details, 1, 1, 1, 1, 0, 0, false)
 	grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -69,11 +70,16 @@ func main() {
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		log.Println(event.Key(), event.Rune(), event.Modifiers())
 		switch event.Key() {
+		case tcell.KeyF1:
+			pager.ShowPage("help")
+			app.SetFocus(help)
+			return nil
 		case tcell.KeyEscape:
-			log.Println("esc key")
-			pager.SwitchToPage("main")
-			pages := pager.GetPageNames(false)
-			log.Println(pages)
+			if len(pager.GetPageNames(true)) > 1 {
+				pager.SwitchToPage("main")
+			} else {
+				app.Stop()
+			}
 		case tcell.KeyCtrlQ:
 			app.Stop()
 		case tcell.KeyCtrlC:
