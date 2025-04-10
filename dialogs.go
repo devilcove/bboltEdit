@@ -18,26 +18,27 @@ func dialog(p tview.Primitive, w, h int) tview.Primitive {
 		AddItem(nil, 0, 1, false)
 }
 
-func addKeyForm(node dbNode) *tview.Form {
+func addKeyForm(node dbNode, dialog string) *tview.Form {
 	form := tview.NewForm().
-		AddTextView("path:", strings.Join(node.path, " "), 0, 1, true, false).
-		AddInputField("name", "", 20, nil, nil).
+		AddInputField("path:", strings.Join(node.path, " "), 0, nil, nil).
+		AddInputField("name", "", 0, nil, nil).
 		AddTextArea("value", "", 0, 12, 0, nil).
 		AddButton("Cancel", func() {
-			pager.RemovePage("key")
+			pager.RemovePage(dialog)
 			app.SetFocus(tree)
 		})
 	form.AddButton("Add", func() {
+		newpath := strings.Split(form.GetFormItem(0).(*tview.InputField).GetText(), " ")
 		name := form.GetFormItem(1).(*tview.InputField).GetText()
 		value := form.GetFormItem(2).(*tview.TextArea).GetText()
-		if err := addKey(node, name, value); err != nil {
+		if err := addKey(newpath, name, value); err != nil {
 			errDisp.SetText(err.Error())
-			pager.ShowPage("error").HidePage("key")
+			pager.ShowPage("error").RemovePage(dialog)
 			return
 		}
-		reloadAndSetSelection(append(node.path, name))
+		reloadAndSetSelection(append(newpath, name))
 		tree.GetCurrentNode().Expand()
-		pager.RemovePage("key")
+		pager.RemovePage(dialog)
 		app.SetFocus(tree)
 	})
 	form.SetButtonsAlign(tview.AlignCenter).

@@ -279,9 +279,9 @@ func addBucket(node dbNode, name string) error {
 	})
 }
 
-func addKey(node dbNode, name, value string) error {
+func addKey(path []string, name, value string) error {
 	return db.Update(func(tx *bbolt.Tx) error {
-		bucket, err := getBucket(node.path, tx)
+		bucket, err := createBucket(path, tx)
 		if err != nil {
 			return err
 		}

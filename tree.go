@@ -93,7 +93,7 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 					pager.ShowPage("error")
 					return nil
 				}
-				key := modal(addKeyForm(node), 60, 22)
+				key := modal(addKeyForm(node, "key"), 60, 22)
 				pager.AddPage("key", key, true, true)
 				return nil
 
