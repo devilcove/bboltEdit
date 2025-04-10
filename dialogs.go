@@ -1,9 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"strings"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -174,13 +176,22 @@ func renameForm(node dbNode, dialog string) *tview.Form {
 }
 
 func editForm(node dbNode, dialog string) *tview.Form {
+	value := prettyString(node.value)
 	form := tview.NewForm().
 		AddTextView("path:", strings.Join(node.path, " "), 0, 1, true, false).
-		AddTextArea("value:", string(node.value), 0, 12, 0, nil).
-		AddButton("cancel", func() {
+		AddTextArea("value:", "", 0, 12, 0, nil).
+		AddButton("Cancel", func() {
 			pager.RemovePage(dialog)
 			app.SetFocus(tree)
 		})
+	form.AddButton("Validate JSON", func() {
+		value := form.GetFormItem(1).(*tview.TextArea).GetText()
+		if json.Valid([]byte(value)) {
+			form.SetBorderColor(tcell.ColorGreen)
+		} else {
+			form.SetBorderColor(tcell.ColorRed)
+		}
+	})
 	form.AddButton("Submit", func() {
 		if err := editNode(node, form.GetFormItem(1).(*tview.TextArea).GetText()); err != nil {
 			errDisp.SetText(err.Error())
@@ -193,6 +204,7 @@ func editForm(node dbNode, dialog string) *tview.Form {
 	})
 	form.SetButtonsAlign(tview.AlignCenter)
 	form.SetBorder(true).SetTitle("Edit Key").SetTitleAlign(tview.AlignCenter)
+	form.GetFormItem(1).(*tview.TextArea).SetText(value, false)
 	log.Println(tview.DefaultFormFieldHeight, tview.DefaultFormFieldWidth)
 	return form
 }

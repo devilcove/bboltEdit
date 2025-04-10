@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"log"
 	"strings"
@@ -378,6 +379,18 @@ func editNode(node dbNode, update string) error {
 		if err != nil {
 			return err
 		}
-		return bucket.Put(node.name, []byte(update))
+		return bucket.Put(node.name, stringToJSON(update))
 	})
+}
+
+func stringToJSON(s string) []byte {
+	var temp any
+	if err := json.Unmarshal([]byte(s), &temp); err != nil {
+		return []byte(s)
+	}
+	bytes, err := json.Marshal(temp)
+	if err != nil {
+		return []byte(s)
+	}
+	return bytes
 }
