@@ -46,12 +46,12 @@ func addKeyForm(node dbNode, dialog string) *tview.Form {
 	return form
 }
 
-func addBucketForm(node dbNode, dialogName string) *tview.Form {
+func addBucketForm(node dbNode, dialog string) *tview.Form {
 	form := tview.NewForm().
 		AddInputField("parent bucket:", strings.Join(node.path, " "), 0, nil, nil).
 		AddInputField("bucket name:", "", 0, nil, nil).
 		AddButton("Cancel", func() {
-			pager.RemovePage(dialogName)
+			pager.RemovePage(dialog)
 			app.SetFocus(tree)
 		})
 	form.AddButton("Add", func() {
@@ -63,12 +63,12 @@ func addBucketForm(node dbNode, dialogName string) *tview.Form {
 		name := form.GetFormItem(1).(*tview.InputField).GetText()
 		if err := addBucket(path, name); err != nil {
 			errDisp.SetText(err.Error())
-			pager.ShowPage("error").HidePage(dialogName)
+			pager.ShowPage("error").HidePage(dialog)
 			return
 		}
 		reloadAndSetSelection(append(path, name))
 		tree.GetCurrentNode().Expand()
-		pager.RemovePage(dialogName)
+		pager.RemovePage(dialog)
 		app.SetFocus(tree)
 	}).AddTextView("to create root bucket", "use empty parent bucket", 0, 2, true, false)
 	form.SetButtonsAlign(tview.AlignCenter).
@@ -76,21 +76,15 @@ func addBucketForm(node dbNode, dialogName string) *tview.Form {
 	return form
 }
 
-func deleteForm(name string) *tview.Form {
+func deleteForm(node dbNode, dialog string) *tview.Form {
 	form := tview.NewForm()
-	form.AddTextView("name:", name, 0, 1, false, false)
+	form.AddTextView("path:", strings.Join(node.path, " "), 0, 1, false, false)
 	form.AddButton("Cancel", func() {
-		pager.HidePage("delete")
+		pager.HidePage(dialog)
 	}).AddButton("Delete", func() {
-		key := tree.GetCurrentNode().GetReference().([]string)
-		node, ok := dbNodes[strings.Join(key, " -> ")]
-		if !ok {
-			errDisp.SetText("no node: " + strings.Join(key, ":"))
-			pager.ShowPage("error").HidePage("delete")
-		}
 		if err := deleteEntry(node); err != nil {
 			errDisp.SetText(err.Error())
-			pager.ShowPage("error").HidePage("delete")
+			pager.ShowPage("error").RemovePage(dialog)
 		}
 		newpath := node.path[:len(node.path)-1]
 		reloadAndSetSelection(newpath)
@@ -125,31 +119,58 @@ func emptyForm(node dbNode, dialog string) *tview.Form {
 	return form
 }
 
-func moveForm(node dbNode) *tview.Form {
+func moveForm(node dbNode, dialog string) *tview.Form {
 	currentPath := strings.Join(node.path, " ")
 	form := tview.NewForm().
 		AddTextView("current path", currentPath, 0, 1, true, true).
 		AddInputField("new path", currentPath, 0, nil, nil).
 		AddButton("Cancel", func() {
-			pager.RemovePage("move")
+			pager.RemovePage(dialog)
 			app.SetFocus(tree)
 		}).
 		SetButtonsAlign(tview.AlignCenter)
 	form.AddButton("Submit", func() {
 		newpath := strings.Split(form.GetFormItem(1).(*tview.InputField).GetText(), " ")
-		node := getCurrentNode("move")
 		log.Println("moving from", node.path, "to", newpath)
 		if err := moveItem(node, newpath); err != nil {
 			errDisp.SetText(err.Error())
-			pager.ShowPage("error").RemovePage("move")
+			pager.ShowPage("error").RemovePage(dialog)
 			return
 		}
 		reloadAndSetSelection(newpath)
-		pager.RemovePage("move")
+		pager.RemovePage(dialog)
 		app.SetFocus(tree)
 	})
 	form.SetBorder(true).SetTitle("Move Item").SetTitleAlign(tview.AlignCenter)
 	return form
+}
+
+func renameForm(node dbNode, dialog string) *tview.Form {
+	f := tview.NewForm()
+	f.AddTextView("path:", strings.Join(node.path, " "), 0, 1, true, false).
+		AddInputField("new name", node.path[len(node.path)-1], 0, nil, nil).
+		AddButton("cancel", func() {
+			pager.RemovePage(dialog)
+		}).
+		AddButton("Rename", func() {
+			newName := f.GetFormItem(1).(*tview.InputField).GetText()
+			if err := renameEntry(node, newName); err != nil {
+				errDisp.SetText(err.Error())
+				pager.ShowPage("error").RemovePage(dialog)
+				return
+			}
+			reloadDB()
+			root := tree.GetRoot()
+			root.SetChildren(getNodes())
+			tree.SetRoot(root)
+			newpath := node.path
+			newpath[len(node.path)-1] = newName
+			selectNode(newpath)
+			pager.RemovePage("rename")
+		}).
+		SetButtonsAlign(tview.AlignCenter)
+	f.SetBorder(true).SetTitle("Rename").SetTitleAlign(tview.AlignCenter)
+	return f
 }
 
 func editForm(node dbNode, dialog string) *tview.Form {

@@ -31,6 +31,12 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 	})
 	tree.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		log.Println("tree key handler", event.Key(), event.Rune(), event.Modifiers())
+		switch event.Key() {
+		case tcell.KeyCtrlR:
+			reloadDB()
+			root.SetChildren(getNodes())
+			tree.SetRoot(root)
+		}
 		switch event.Modifiers() {
 		case tcell.ModAlt:
 			switch event.Rune() {
@@ -39,35 +45,28 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 			case 'e':
 				tree.GetRoot().ExpandAll()
 			}
-		case tcell.ModCtrl:
-			switch event.Rune() {
-			case 'r':
-				reloadDB()
-				root.SetChildren(getNodes())
-				tree.SetRoot(root)
-			}
 		case tcell.ModNone:
 			switch event.Rune() {
 
 			case 'b':
-				_, node := getCurrentNodes()
+				node := getCurrentNode()
 				bucket := dialog(addBucketForm(node, "bucket"), 60, 12)
 				pager.AddPage("bucket", bucket, true, true)
 				return nil
 
 			case 'd':
-				node := tree.GetCurrentNode()
-				if node.GetReference() == nil {
+				node := getCurrentNode()
+				if node.path == nil {
 					errDisp.SetText("cannot delete root node")
 					pager.ShowPage("error")
 					return nil
 				}
-				delete := modal(deleteForm(node.GetText()), 40, 7)
+				delete := modal(deleteForm(node, "delete"), 40, 7)
 				pager.AddPage("delete", delete, true, true)
 				return nil
 
 			case 'e':
-				_, node := getCurrentNodes()
+				node := getCurrentNode()
 				if node.path == nil {
 					errDisp.SetText("not applicable to root node")
 					pager.ShowPage("error")
@@ -78,7 +77,7 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 					pager.AddPage("empty", empty, true, true)
 					log.Println("focus empty modal")
 					app.SetFocus(empty)
-					//return nil
+					return nil
 				} else {
 					log.Println("edit key")
 					edit := dialog(editForm(node, "edit"), 60, 20)
@@ -87,7 +86,7 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 				}
 
 			case 'k':
-				_, node := getCurrentNodes()
+				node := getCurrentNode()
 				if node.path == nil {
 					errDisp.SetText("cannot add key to root")
 					pager.ShowPage("error")
@@ -98,34 +97,23 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 				return nil
 
 			case 'm':
-				node := tree.GetCurrentNode()
-				if node.GetReference() == nil {
+				node := getCurrentNode()
+				if node.path == nil {
 					errDisp.SetText("cannot move root node")
 					pager.ShowPage("error")
 					return nil
 				}
-				ref := node.GetReference().([]string)
-				dbNode, ok := dbNodes[strings.Join(ref, " -> ")]
-				if !ok {
-					errDisp.SetText("invalid node")
-					pager.ShowPage("error")
-					return nil
-				}
-				move := modal(moveForm(dbNode), 60, 10)
+				move := modal(moveForm(node, "move"), 60, 10)
 				pager.AddPage("move", move, true, true)
 
 			case 'r':
-				node := tree.GetCurrentNode()
-				if node.GetReference() == nil {
+				node := getCurrentNode()
+				if node.path == nil {
 					errDisp.SetText("cannot rename root node")
 					pager.ShowPage("error")
 					return nil
 				}
-				log.Println(node.GetReference(), node.GetLevel(), node.GetText())
-				ref := node.GetReference().([]string)
-				log.Println(ref)
-				log.Println(dbNodes[strings.Join(ref, " -> ")])
-				rename := modal(renameForm(node.GetText()), 40, 10)
+				rename := modal(renameForm(node, "rename"), 40, 10)
 				pager.AddPage("rename", rename, true, true)
 				return nil
 
@@ -165,42 +153,6 @@ func prettyString(s []byte) string {
 		return string(s)
 	}
 	return data.String()
-}
-
-func renameForm(name string) *tview.Form {
-	f := tview.NewForm()
-	f.AddInputField("new name", name, 20, nil, nil)
-	f.AddButton("cancel", func() {
-		pager.HidePage("rename")
-	}).
-		AddButton("rename", func() {
-			key := tree.GetCurrentNode().GetReference().([]string)
-			node, ok := dbNodes[strings.Join(key, " -> ")]
-			if !ok {
-				log.Println("rename err: no node")
-				errDisp.SetText("no node: " + strings.Join(key, ":"))
-				pager.ShowPage("error")
-				pager.HidePage("rename")
-			}
-			newName := f.GetFormItem(0).(*tview.InputField).GetText()
-			if err := renameEntry(node, newName); err != nil {
-				log.Println("rename err", err)
-				errDisp.SetText(err.Error())
-				pager.ShowPage("error")
-				pager.HidePage("rename")
-				return
-			}
-			reloadDB()
-			root := tree.GetRoot()
-			root.SetChildren(getNodes())
-			tree.SetRoot(root)
-			newpath := node.path
-			newpath[len(node.path)-1] = newName
-			selectNode(newpath)
-			pager.HidePage("rename")
-		})
-	f.SetBorder(true).SetTitle("Rename").SetTitleAlign(tview.AlignCenter)
-	return f
 }
 
 //	func emptyForm(name string) *tview.Grid {
@@ -249,19 +201,6 @@ func getChild(node *tview.TreeNode, name string) *tview.TreeNode {
 	return nil
 }
 
-func getCurrentNode(modal string) dbNode {
-	if tree.GetCurrentNode().GetReference() == nil {
-		return dbNode{}
-	}
-	key := tree.GetCurrentNode().GetReference().([]string)
-	node, ok := dbNodes[strings.Join(key, " -> ")]
-	if !ok {
-		errDisp.SetText("no node: " + strings.Join(key, ":"))
-		pager.ShowPage("error").HidePage(modal)
-	}
-	return node
-}
-
 func reloadAndSetSelection(path []string) {
 	reloadDB()
 	root := tree.GetRoot()
@@ -270,11 +209,11 @@ func reloadAndSetSelection(path []string) {
 	selectNode(path)
 }
 
-func getCurrentNodes() (*tview.TreeNode, dbNode) {
+func getCurrentNode() dbNode {
 	treeNode := tree.GetCurrentNode()
 	reference := treeNode.GetReference()
 	if reference == nil {
-		return treeNode, dbNode{
+		return dbNode{
 			path: nil,
 			kind: "bucket",
 		}
@@ -283,6 +222,7 @@ func getCurrentNodes() (*tview.TreeNode, dbNode) {
 	node, ok := dbNodes[strings.Join(path, " -> ")]
 	if !ok {
 		log.Println("involid node", path)
+		return dbNode{}
 	}
-	return treeNode, node
+	return node
 }
