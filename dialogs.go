@@ -48,24 +48,29 @@ func addKeyForm(node dbNode, dialog string) *tview.Form {
 
 func addBucketForm(node dbNode, dialogName string) *tview.Form {
 	form := tview.NewForm().
-		AddTextView("path:", strings.Join(node.path, " "), 0, 1, true, false).
-		AddInputField("name", "", 20, nil, nil).
+		AddInputField("parent bucket:", strings.Join(node.path, " "), 0, nil, nil).
+		AddInputField("bucket name:", "", 0, nil, nil).
 		AddButton("Cancel", func() {
 			pager.RemovePage(dialogName)
 			app.SetFocus(tree)
 		})
 	form.AddButton("Add", func() {
+		path := []string{}
+		parent := form.GetFormItem(0).(*tview.InputField).GetText()
+		if parent != "" {
+			path = strings.Split(parent, " ")
+		}
 		name := form.GetFormItem(1).(*tview.InputField).GetText()
-		if err := addBucket(node, name); err != nil {
+		if err := addBucket(path, name); err != nil {
 			errDisp.SetText(err.Error())
 			pager.ShowPage("error").HidePage(dialogName)
 			return
 		}
-		reloadAndSetSelection(append(node.path, name))
+		reloadAndSetSelection(append(path, name))
 		tree.GetCurrentNode().Expand()
 		pager.RemovePage(dialogName)
 		app.SetFocus(tree)
-	})
+	}).AddTextView("to create root bucket", "use empty parent bucket", 0, 2, true, false)
 	form.SetButtonsAlign(tview.AlignCenter).
 		SetBorder(true).SetTitle("Add Bucket").SetTitleAlign(tview.AlignCenter)
 	return form

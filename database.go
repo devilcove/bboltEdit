@@ -262,15 +262,14 @@ func emptyBucket(node dbNode) error {
 	})
 }
 
-func addBucket(node dbNode, name string) error {
+func addBucket(path []string, name string) error {
+	log.Println("adding bucket", name, path)
 	return db.Update(func(tx *bbolt.Tx) error {
-		if node.path == nil {
-			if _, err := tx.CreateBucket([]byte(name)); err != nil {
-				return err
-			}
-			return nil
+		if len(path) == 0 {
+			_, err := tx.CreateBucket([]byte(name))
+			return err
 		}
-		bucket, err := getBucket(node.path, tx)
+		bucket, err := createBucket(path, tx)
 		if err != nil {
 			return err
 		}
@@ -355,7 +354,7 @@ func createParentBucket(path []string, tx *bbolt.Tx) (*bbolt.Bucket, error) {
 }
 
 func createBucket(path []string, tx *bbolt.Tx) (*bbolt.Bucket, error) {
-	if path == nil {
+	if path == nil || len(path) == 0 {
 		return nil, errors.New("invalid path")
 	}
 	//create root bucket
