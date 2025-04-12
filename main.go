@@ -15,6 +15,8 @@ import (
 var (
 	app     *tview.Application
 	errDisp *tview.Modal
+	details *tview.TextArea
+	grid    *tview.Grid
 	header  *tview.TextView
 	help    *tview.Modal
 	pager   *tview.Pages
@@ -23,37 +25,32 @@ var (
 
 // Show a navigable tree view of the current directory.
 func main() {
+	//dirUpdate := make(chan string)
 	InitLog()
 	header = textView("header")
-	if err := InitDatabase("test.db"); err != nil {
+	dbfile := "test.db"
+	if len(os.Args) == 2 {
+		dbfile = os.Args[1]
+	}
+	if err := InitDatabase(dbfile); err != nil {
 		panic(err)
 	}
-
+	//dir := modal(dirForm("dir", dirUpdate), 40, 10)
 	help = helpView()
 	errDisp = errorView()
-	details := textArea("details")
+	details = textArea("details")
 	details.SetBorder(true).SetTitle("Details").SetTitleAlign(tview.AlignCenter)
 	tree = newTree(details)
-	file := newFiles()
+	file := dialog(newFiles(), 60, 30).(*tview.Flex)
 
-	grid := tview.NewGrid().
-		SetRows(1, 0, 1).
-		SetColumns(0, 0).
-		SetBorders(true).
-		AddItem(header, 0, 0, 1, 2, 0, 0, false).
-		AddItem(textView("press ? for help, esc or ctrl-Q to quit"), 2, 0, 1, 2, 0, 0, false).
-		AddItem(tree, 1, 0, 1, 1, 0, 0, true).
-		AddItem(details, 1, 1, 1, 1, 0, 0, false)
-	grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		log.Println("grid key handler", event.Key())
-		return event
-	})
+	grid = mainGrid()
 
 	pager = tview.NewPages().
 		AddPage("main", grid, true, true).
 		AddPage("help", help, true, false).
-		AddPage("file", file, true, false).
+		//AddPage("file", file, true, false).
 		AddPage("error", errDisp, true, false)
+		//AddPage("dir", dir, true, false)
 	pager.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		log.Println("pager event handler", event.Key())
 		return event
@@ -92,7 +89,8 @@ func main() {
 				pager.ShowPage("help")
 				app.SetFocus(help)
 			case 'o':
-				pager.SwitchToPage("file")
+				file = dialog(newFiles(), 60, 30).(*tview.Flex)
+				pager.AddPage("file", file, true, true)
 				app.SetFocus(file)
 			}
 		}
@@ -132,4 +130,20 @@ func textView(text string) *tview.TextView {
 	return tview.NewTextView().
 		SetTextAlign(tview.AlignCenter).
 		SetText(text)
+}
+
+func mainGrid() *tview.Grid {
+	grid = tview.NewGrid().
+		SetRows(1, 0, 1).
+		SetColumns(0, 0).
+		SetBorders(true).
+		AddItem(header, 0, 0, 1, 2, 0, 0, false).
+		AddItem(textView("press ? for help, esc or ctrl-Q to quit"), 2, 0, 1, 2, 0, 0, false).
+		AddItem(tree, 1, 0, 1, 1, 0, 0, true).
+		AddItem(details, 1, 1, 1, 1, 0, 0, false)
+	grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		log.Println("grid key handler", event.Key())
+		return event
+	})
+	return grid
 }

@@ -158,16 +158,6 @@ func prettyString(s []byte) string {
 	return data.String()
 }
 
-//	func emptyForm(name string) *tview.Grid {
-//		first := tview.NewInputField().SetLabel("Bucket to empty ").SetText(name)
-//		second := tview.NewTextView().SetLabel("press esc to cancel, enter to accept")
-//		form := tview.NewGrid().
-//			SetColumns(0, 40, 0).
-//			SetRows(1, 1, 1).
-//			//SetBorders(true).
-//			AddItem(first, 1, 1, 1, 1, 0, 0, false).
-//			AddItem(second, 3, 1, 1, 1, 0, 0, true)
-
 func modal(p tview.Primitive, w, h int) tview.Primitive {
 	modal := tview.NewGrid().
 		SetColumns(0, w, 0).
@@ -178,7 +168,6 @@ func modal(p tview.Primitive, w, h int) tview.Primitive {
 		return event
 	})
 	return modal
-
 }
 
 func selectNode(path []string) {

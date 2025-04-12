@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -14,19 +15,43 @@ type ref struct {
 	isDir bool
 }
 
+var (
+	top        *tview.TextView
+	newRootDir = make(chan string)
+)
+
 func newFiles() *tview.Grid {
-	picker := fileTree()
-	grid := tview.NewGrid().
+	cwd, _ := os.Getwd()
+	picker := fileTree(cwd)
+	top = textView("Select file to view (" + cwd + ")")
+	fileGrid := tview.NewGrid().
 		SetRows(1, 0, 1).
 		SetColumns(0).
-		SetBorders(true).
-		AddItem(textView("Select bbolt db file to view"),
+		//SetBorders(true).
+		AddItem(top,
 			0, 0, 1, 1, 0, 0, false).
 		AddItem(textView("press enter to expand directory or select file"),
 			2, 0, 1, 1, 0, 0, false).
 		AddItem(picker, 1, 0, 1, 1, 0, 0, true)
-	grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	fileGrid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		log.Println("file grid handler", event.Key(), event.Modifiers(), event.Rune())
 		switch event.Key() {
+		case tcell.KeyRune:
+			switch event.Rune() {
+			case 'o':
+				selected := picker.GetCurrentNode().GetReference().(ref).path
+				dirsearch := modal(dirForm("dir", selected, newRootDir), 40, 10)
+				pager.AddPage("dir", dirsearch, true, true).HidePage("file")
+				pager.SendToFront("dir")
+			case 'p':
+				current := picker.GetRoot()
+				log.Println("root", current.GetText())
+				for _, child := range current.GetChildren() {
+					log.Println("child", child.GetText())
+				}
+				return nil
+			}
+
 		case tcell.KeyEnter:
 			r := picker.GetCurrentNode().GetReference()
 			if r == nil {
@@ -34,13 +59,16 @@ func newFiles() *tview.Grid {
 			}
 			node := r.(ref)
 			if !node.isDir {
-				log.Println("switching to", node.path)
+				log.Println("selected file", node.path)
 				if err := InitDatabase(node.path); err != nil {
 					errDisp.SetText(err.Error())
 					pager.ShowPage("error")
 					return nil
 				}
-				pager.SwitchToPage("main")
+				tree = newTree(details)
+				grid = mainGrid()
+				pager.AddPage("main", grid, true, true).RemovePage("file")
+				app.SetFocus(tree)
 				fn := tree.GetInputCapture()
 				fn(tcell.NewEventKey(tcell.KeyRune, 'r', tcell.ModCtrl))
 				return nil
@@ -48,44 +76,87 @@ func newFiles() *tview.Grid {
 		}
 		return event
 	})
-	return grid
+	children := picker.GetCurrentNode().GetChildren()
+	for _, child := range children {
+		reference := child.GetReference().(ref)
+		log.Println(child.GetText(), reference.path, reference.isDir)
+	}
+	go func(c chan string) {
+		for dir := range c {
+			log.Println("changing to dir", dir)
+			app.QueueUpdateDraw(func() {
+				fileGrid.RemoveItem(picker)
+				fileGrid.RemoveItem(top)
+				picker = fileTree(dir)
+				root := picker.GetRoot()
+				log.Println("new root for file picker")
+				for _, child := range root.GetChildren() {
+					log.Println("child", child.GetText())
+				}
+				fileGrid.AddItem(picker, 1, 0, 1, 1, 0, 0, true)
+				top.SetText(dir)
+				fileGrid.AddItem(top, 0, 0, 1, 1, 0, 0, false)
+				file := dialog(fileGrid, 60, 30)
+				pager.AddPage("file", file, true, true)
+				app.Sync()
+				app.SetFocus(picker)
+			})
+
+		}
+	}(newRootDir)
+
+	fileGrid.SetBorder(true)
+
+	return fileGrid
 }
 
-func fileTree() *tview.TreeView {
-	rootDir := "."
+func fileTree(dir string) *tview.TreeView {
+	rootDir := ".."
 	root := tview.NewTreeNode(rootDir).
 		SetColor(tcell.ColorRed)
+	root.SetReference(ref{
+		path:  dir,
+		isDir: true,
+	})
 	tree := tview.NewTreeView().
 		SetRoot(root).
 		SetCurrentNode(root)
 
 	// Add the current directory to the root node.
-	add(root, rootDir)
-
-	//tree.SetDoneFunc(func(key tcell.Key) {
-	//log.Println("file done func")
-	//node := tree.GetCurrentNode().GetReference().(ref)
-	//c <- node.path
-	//tree = nil
-	//})
+	add(root, dir)
 
 	// If a directory was selected, open it.
 	tree.SetSelectedFunc(func(node *tview.TreeNode) {
-		reference := node.GetReference()
-		if reference == nil {
-			log.Println("root node was selected")
-			return // Selecting the root node does nothing.
-		}
-		ref, ok := reference.(ref)
+		reference, ok := node.GetReference().(ref)
 		if !ok {
 			log.Println("invalid type assertion")
 			return
 		}
-		if ref.isDir {
+		log.Println("processing node", reference.path, reference.isDir)
+		if strings.Contains(node.GetText(), "..") {
+			log.Println("reloding parent dir")
 			children := node.GetChildren()
+			for _, child := range children {
+				node.RemoveChild(child)
+			}
+			dir = filepath.Dir(dir)
+			top.SetText("select file to view (" + dir + ")")
+			root.SetReference(ref{
+				path:  dir,
+				isDir: true,
+			})
+			root.SetText("..")
+			add(node, dir)
+			node.SetExpanded(true)
+			return
+		}
+		if reference.isDir {
+			log.Println("handle", node.GetText(), reference.path)
+			children := node.GetChildren()
+			log.Println(len(children), "children")
 			if len(children) == 0 {
 				// Load and show files in this directory.
-				add(node, node.GetText())
+				add(node, reference.path)
 			} else {
 				// Collapse if visible, expand if collapsed.
 				node.SetExpanded(!node.IsExpanded())
@@ -98,6 +169,7 @@ func fileTree() *tview.TreeView {
 // A helper function which adds the files and directories of the given path
 // to the given target node.
 func add(target *tview.TreeNode, path string) {
+	log.Println("adding", target.GetText(), "to", path)
 	entries, err := os.ReadDir(path)
 	if err != nil {
 		log.Println(err)
@@ -114,6 +186,7 @@ func add(target *tview.TreeNode, path string) {
 		if entry.IsDir() {
 			node.SetColor(tcell.ColorGreen)
 		}
+		log.Println("added node", entry.Name(), ref.path, ref.isDir)
 		target.AddChild(node)
 	}
 }

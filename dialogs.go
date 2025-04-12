@@ -205,6 +205,40 @@ func editForm(node dbNode, dialog string) *tview.Form {
 	form.SetButtonsAlign(tview.AlignCenter)
 	form.SetBorder(true).SetTitle("Edit Key").SetTitleAlign(tview.AlignCenter)
 	form.GetFormItem(1).(*tview.TextArea).SetText(value, false)
-	log.Println(tview.DefaultFormFieldHeight, tview.DefaultFormFieldWidth)
 	return form
+}
+
+func dirForm(name, startsearch string, ch chan string) *tview.Form {
+	form := tview.NewForm().
+		AddInputField("path", startsearch, 0, nil, nil).
+		AddButton("Cancel", func() {
+			pager.HidePage(name)
+		}).SetButtonsAlign(tview.AlignCenter)
+	form.AddButton("Search", func() {
+		ch <- form.GetFormItem(0).(*tview.InputField).GetText()
+		pager.HidePage(name).ShowPage("file")
+	})
+	form.SetBorder(true).SetTitle("Directory to Search").SetTitleAlign(tview.AlignCenter)
+	return form
+}
+
+func updateFilePicker(path string, fileGrid *tview.Grid, picker *tview.TreeView) {
+	log.Println("changing to dir", path)
+	app.QueueUpdateDraw(func() {
+		fileGrid.RemoveItem(picker)
+		fileGrid.RemoveItem(top)
+		picker = fileTree(path)
+		root := picker.GetRoot()
+		log.Println("new root for file picker")
+		for _, child := range root.GetChildren() {
+			log.Println("child", child.GetText())
+		}
+		fileGrid.AddItem(picker, 1, 0, 1, 1, 0, 0, true)
+		top.SetText(path)
+		fileGrid.AddItem(top, 0, 0, 1, 1, 0, 0, false)
+		file := dialog(fileGrid, 60, 30)
+		pager.AddPage("file", file, true, true)
+		app.Sync()
+		app.SetFocus(picker)
+	})
 }

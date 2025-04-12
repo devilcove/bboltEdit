@@ -64,10 +64,6 @@ func getNodes() []*tview.TreeNode {
 		})
 		return nil
 	})
-	//log.Println(pretty.Sprint(dbNodes))
-	//for k, v := range dbNodes {
-	//log.Println(v.kind, string(v.name), k, v.path, string(v.value))
-	//}
 	return nodes
 }
 
