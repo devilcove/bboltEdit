@@ -11,7 +11,7 @@ import (
 
 var (
 	app     *tview.Application
-	details *tview.TextArea
+	details *tview.TextView
 	grid    *tview.Grid
 	header  *tview.TextView
 	pager   *tview.Pages
@@ -29,7 +29,13 @@ func main() {
 	if err := InitDatabase(dbfile); err != nil {
 		panic(err)
 	}
-	details = textArea("details")
+	details = tview.NewTextView()
+	details.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyTAB {
+			app.SetFocus(tree)
+		}
+		return event
+	})
 	details.SetBorder(true).SetTitle("Details").SetTitleAlign(tview.AlignCenter)
 	tree = newTree(details)
 
@@ -83,11 +89,6 @@ func InitLog() {
 	}
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 	log.Default().SetOutput(logFile)
-}
-
-func textArea(text string) *tview.TextArea {
-	return tview.NewTextArea().
-		SetText(text, true)
 }
 
 func textView(text string) *tview.TextView {

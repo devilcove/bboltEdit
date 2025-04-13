@@ -11,7 +11,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-func newTree(detail *tview.TextArea) *tview.TreeView {
+func newTree(detail *tview.TextView) *tview.TreeView {
 	treeKeys := []key{
 		{"c", "(c)ollapse all nodes"},
 		{"b", "create new (b)ucket"},
@@ -48,6 +48,8 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 			tree.SetRoot(root)
 		case tcell.KeyEsc:
 			app.Stop()
+		case tcell.KeyTAB:
+			app.SetFocus(detail)
 		case tcell.KeyRune:
 			log.Println("tree key handler, runes", event.Rune())
 			switch event.Rune() {
@@ -144,7 +146,7 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 
 }
 
-func updateDetail(detail *tview.TextArea, node *tview.TreeNode) {
+func updateDetail(detail *tview.TextView, node *tview.TreeNode) {
 	reference := node.GetReference()
 	value := ""
 	if reference != nil {
@@ -159,10 +161,10 @@ func updateDetail(detail *tview.TextArea, node *tview.TreeNode) {
 		value = fmt.Sprintf("Bucket:\n\nPath: %s\nName: %s",
 			strings.Join(entry.path, " -> "), string(entry.name))
 	} else {
-		value = fmt.Sprintf("Key:\n\nPath: %s\nName: %s\n\nValue:\n%s",
+		value = fmt.Sprintf("Key:\n\nPath: %s\nName: %s\n\nValue:\n\n%s",
 			strings.Join(entry.path, " -> "), string(entry.name), prettyString(entry.value))
 	}
-	detail.SetText(value, true)
+	detail.SetText(value)
 }
 
 func prettyString(s []byte) string {
