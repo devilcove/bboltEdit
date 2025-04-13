@@ -21,6 +21,12 @@ var (
 )
 
 func newFiles() *tview.Grid {
+	rightKeys := []key{
+		{"o", "open dialog to change directory"},
+		{"p", "println node table to logs"},
+		{"enter", "expand dir, select file"},
+		{"?", "show this help"},
+	}
 	cwd, _ := os.Getwd()
 	picker := fileTree(cwd)
 	top = textView("Select file to view (" + cwd + ")")
@@ -41,7 +47,7 @@ func newFiles() *tview.Grid {
 			case 'o':
 				selected := picker.GetCurrentNode().GetReference().(ref).path
 				dirsearch := modal(dirForm("dir", selected, newRootDir), 40, 10)
-				pager.AddPage("dir", dirsearch, true, true).HidePage("file")
+				pager.AddPage("dir", dirsearch, true, true)
 				pager.SendToFront("dir")
 			case 'p':
 				current := picker.GetRoot()
@@ -49,6 +55,10 @@ func newFiles() *tview.Grid {
 				for _, child := range current.GetChildren() {
 					log.Println("child", child.GetText())
 				}
+			case '?':
+				help := helpDialog("Key Bindings", 100, 10, rightKeys, treeMoveKeys)
+				pager.AddPage("help", help, true, true)
+				app.SetFocus(help)
 				return nil
 			}
 
@@ -61,16 +71,13 @@ func newFiles() *tview.Grid {
 			if !node.isDir {
 				log.Println("selected file", node.path)
 				if err := InitDatabase(node.path); err != nil {
-					errDisp.SetText(err.Error())
-					pager.ShowPage("error")
+					showError(err.Error())
 					return nil
 				}
 				tree = newTree(details)
 				grid = mainGrid()
 				pager.AddPage("main", grid, true, true).RemovePage("file")
 				app.SetFocus(tree)
-				fn := tree.GetInputCapture()
-				fn(tcell.NewEventKey(tcell.KeyRune, 'r', tcell.ModCtrl))
 				return nil
 			}
 		}
@@ -101,7 +108,6 @@ func newFiles() *tview.Grid {
 				app.Sync()
 				app.SetFocus(picker)
 			})
-
 		}
 	}(newRootDir)
 

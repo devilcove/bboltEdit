@@ -34,8 +34,7 @@ func addKeyForm(node dbNode, dialog string) *tview.Form {
 		name := form.GetFormItem(1).(*tview.InputField).GetText()
 		value := form.GetFormItem(2).(*tview.TextArea).GetText()
 		if err := addKey(newpath, name, value); err != nil {
-			errDisp.SetText(err.Error())
-			pager.ShowPage("error").RemovePage(dialog)
+			showError(err.Error())
 			return
 		}
 		reloadAndSetSelection(append(newpath, name))
@@ -64,8 +63,7 @@ func addBucketForm(node dbNode, dialog string) *tview.Form {
 		}
 		name := form.GetFormItem(1).(*tview.InputField).GetText()
 		if err := addBucket(path, name); err != nil {
-			errDisp.SetText(err.Error())
-			pager.ShowPage("error").HidePage(dialog)
+			showError(err.Error())
 			return
 		}
 		reloadAndSetSelection(append(path, name))
@@ -82,17 +80,17 @@ func deleteForm(node dbNode, dialog string) *tview.Form {
 	form := tview.NewForm()
 	form.AddTextView("path:", strings.Join(node.path, " "), 0, 1, false, false)
 	form.AddButton("Cancel", func() {
-		pager.HidePage(dialog)
+		pager.RemovePage(dialog)
 	}).AddButton("Delete", func() {
 		if err := deleteEntry(node); err != nil {
-			errDisp.SetText(err.Error())
-			pager.ShowPage("error").RemovePage(dialog)
+			showError(err.Error())
+			return
 		}
 		newpath := node.path[:len(node.path)-1]
 		reloadAndSetSelection(newpath)
 		selectNode(newpath)
 		tree.GetCurrentNode().Expand()
-		pager.HidePage("delete")
+		pager.RemovePage(dialog)
 	}).
 		SetButtonsAlign(tview.AlignCenter)
 	form.SetBorder(true).SetTitle("Delete Item").SetTitleAlign(tview.AlignCenter)
@@ -108,8 +106,7 @@ func emptyForm(node dbNode, dialog string) *tview.Form {
 		}).
 		AddButton("Empty", func() {
 			if err := emptyBucket(node); err != nil {
-				errDisp.SetText(err.Error())
-				pager.ShowPage("error").RemovePage(dialog)
+				showError(err.Error())
 				return
 			}
 			reloadAndSetSelection(node.path)
@@ -135,8 +132,7 @@ func moveForm(node dbNode, dialog string) *tview.Form {
 		newpath := strings.Split(form.GetFormItem(1).(*tview.InputField).GetText(), " ")
 		log.Println("moving from", node.path, "to", newpath)
 		if err := moveItem(node, newpath); err != nil {
-			errDisp.SetText(err.Error())
-			pager.ShowPage("error").RemovePage(dialog)
+			showError(err.Error())
 			return
 		}
 		reloadAndSetSelection(newpath)
@@ -157,8 +153,7 @@ func renameForm(node dbNode, dialog string) *tview.Form {
 		AddButton("Rename", func() {
 			newName := f.GetFormItem(1).(*tview.InputField).GetText()
 			if err := renameEntry(node, newName); err != nil {
-				errDisp.SetText(err.Error())
-				pager.ShowPage("error").RemovePage(dialog)
+				showError(err.Error())
 				return
 			}
 			reloadDB()
@@ -194,8 +189,7 @@ func editForm(node dbNode, dialog string) *tview.Form {
 	})
 	form.AddButton("Submit", func() {
 		if err := editNode(node, form.GetFormItem(1).(*tview.TextArea).GetText()); err != nil {
-			errDisp.SetText(err.Error())
-			pager.ShowPage("error").RemovePage(dialog)
+			showError(err.Error())
 			return
 		}
 		reloadAndSetSelection(node.path)
@@ -220,25 +214,4 @@ func dirForm(name, startsearch string, ch chan string) *tview.Form {
 	})
 	form.SetBorder(true).SetTitle("Directory to Search").SetTitleAlign(tview.AlignCenter)
 	return form
-}
-
-func updateFilePicker(path string, fileGrid *tview.Grid, picker *tview.TreeView) {
-	log.Println("changing to dir", path)
-	app.QueueUpdateDraw(func() {
-		fileGrid.RemoveItem(picker)
-		fileGrid.RemoveItem(top)
-		picker = fileTree(path)
-		root := picker.GetRoot()
-		log.Println("new root for file picker")
-		for _, child := range root.GetChildren() {
-			log.Println("child", child.GetText())
-		}
-		fileGrid.AddItem(picker, 1, 0, 1, 1, 0, 0, true)
-		top.SetText(path)
-		fileGrid.AddItem(top, 0, 0, 1, 1, 0, 0, false)
-		file := dialog(fileGrid, 60, 30)
-		pager.AddPage("file", file, true, true)
-		app.Sync()
-		app.SetFocus(picker)
-	})
 }

@@ -12,6 +12,18 @@ import (
 )
 
 func newTree(detail *tview.TextArea) *tview.TreeView {
+	treeKeys := []key{
+		{"c", "(c)ollapse all nodes"},
+		{"b", "create new (b)ucket"},
+		{"d", "(d)elete key or bucket"},
+		{"e", "(e)mpty bucket or (e)dit key"},
+		{"k", "add new (k)ey"},
+		{"m", "(m)ove key or bucket"},
+		{"o", "(o)pen file selection"},
+		{"r", "(r)ename key or bucket"},
+		{"x", "e(x)pand all nodes"},
+		{"?", "show help"},
+	}
 
 	rootDir := "."
 	root := tview.NewTreeNode(rootDir).
@@ -19,9 +31,7 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 	root.SetChildren(getNodes())
 	tree := tview.NewTreeView().
 		SetRoot(root).
-		SetCurrentNode(root) //.
-		//SetTopLevel(1)
-
+		SetCurrentNode(root)
 	tree.SetSelectedFunc(func(node *tview.TreeNode) {
 		node.SetExpanded(!node.IsExpanded())
 		updateDetail(detail, node)
@@ -36,91 +46,96 @@ func newTree(detail *tview.TextArea) *tview.TreeView {
 			reloadDB()
 			root.SetChildren(getNodes())
 			tree.SetRoot(root)
-		}
-		switch event.Modifiers() {
-		case tcell.ModAlt:
+		case tcell.KeyEsc:
+			app.Stop()
+		case tcell.KeyRune:
+			log.Println("tree key handler, runes", event.Rune())
 			switch event.Rune() {
+			//collapse node
 			case 'c':
 				tree.GetRoot().CollapseAll()
-			case 'e':
-				tree.GetRoot().ExpandAll()
-			}
-		case tcell.ModNone:
-			switch event.Rune() {
-
+			//add bucket
 			case 'b':
 				node := getCurrentNode()
-				bucket := dialog(addBucketForm(node, "bucket"), 60, 12)
-				pager.AddPage("bucket", bucket, true, true)
+				bucket := dialog(addBucketForm(node, "dialog"), 60, 12)
+				pager.AddPage("dialog", bucket, true, true)
 				return nil
-
+			//delete bucket/key
 			case 'd':
 				node := getCurrentNode()
 				if node.path == nil {
-					errDisp.SetText("cannot delete root node")
-					pager.ShowPage("error")
+					showError("cannot delete root node")
 					return nil
 				}
-				delete := modal(deleteForm(node, "delete"), 40, 7)
-				pager.AddPage("delete", delete, true, true)
+				delete := modal(deleteForm(node, "dialog"), 40, 7)
+				pager.AddPage("dialog", delete, true, true)
 				return nil
-
+			//empty bucket or edit key
 			case 'e':
 				node := getCurrentNode()
 				if node.path == nil {
-					errDisp.SetText("not applicable to root node")
-					pager.ShowPage("error")
+					showError("not applicable to root node")
 					return nil
 				}
 				if node.kind == "bucket" {
-					empty := dialog(emptyForm(node, "empty"), 60, 7)
-					pager.AddPage("empty", empty, true, true)
+					empty := dialog(emptyForm(node, "dialog"), 60, 7)
+					pager.AddPage("dialog", empty, true, true)
 					log.Println("focus empty modal")
 					app.SetFocus(empty)
 					return nil
 				} else {
 					log.Println("edit key")
-					edit := dialog(editForm(node, "edit"), 60, 20)
-					pager.AddPage("edit", edit, true, true)
+					edit := dialog(editForm(node, "dialog"), 60, 20)
+					pager.AddPage("dialog", edit, true, true)
 					return nil
 				}
-
+			//add key
 			case 'k':
 				node := getCurrentNode()
 				if node.path == nil {
-					errDisp.SetText("cannot add key to root")
+					showError("cannot add key to root")
 					pager.ShowPage("error")
 					return nil
 				}
-				key := modal(addKeyForm(node, "key"), 60, 22)
-				pager.AddPage("key", key, true, true)
+				key := modal(addKeyForm(node, "dialog"), 60, 22)
+				pager.AddPage("dialog", key, true, true)
 				return nil
-
+			//move bucket/key
 			case 'm':
 				node := getCurrentNode()
 				if node.path == nil {
-					errDisp.SetText("cannot move root node")
+					showError("cannot move root node")
 					pager.ShowPage("error")
 					return nil
 				}
-				move := modal(moveForm(node, "move"), 60, 10)
-				pager.AddPage("move", move, true, true)
-
+				move := modal(moveForm(node, "dialog"), 60, 10)
+				pager.AddPage("dialog", move, true, true)
+			//open filepicker
+			case 'o':
+				file := dialog(newFiles(), 60, 30)
+				pager.AddPage("file", file, true, true)
+				app.SetFocus(file)
+			//rename bucket/key
 			case 'r':
 				node := getCurrentNode()
 				if node.path == nil {
-					errDisp.SetText("cannot rename root node")
+					showError("cannot rename root node")
 					pager.ShowPage("error")
 					return nil
 				}
-				rename := modal(renameForm(node, "rename"), 40, 10)
-				pager.AddPage("rename", rename, true, true)
+				rename := modal(renameForm(node, "dialog"), 40, 10)
+				pager.AddPage("dialog", rename, true, true)
 				return nil
-
+			//expand all nodes
+			case 'x':
+				tree.GetRoot().ExpandAll()
+			//show help
 			case '?':
-				pager.ShowPage("help")
+				help := helpDialog("Key Bindings", 100, 15, treeKeys, treeMoveKeys)
+				pager.AddPage("help", help, true, true)
 				app.SetFocus(help)
 			}
+			return nil
 		}
 		return event
 	})

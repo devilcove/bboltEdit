@@ -4,7 +4,6 @@ go 1.24.1
 
 require (
 	github.com/gdamore/tcell/v2 v2.8.1
-	github.com/lmittmann/tint v1.0.7
 	github.com/rivo/tview v0.0.0-20250330220935-949945f8d922
 	go.etcd.io/bbolt v1.4.0
 )
