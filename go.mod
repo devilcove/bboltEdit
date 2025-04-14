@@ -1,4 +1,4 @@
-module tree
+module github.com/devilcove/bboltEdit
 
 go 1.24.1
 
