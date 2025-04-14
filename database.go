@@ -1,3 +1,4 @@
+//nolint:varnamelen
 package main
 
 import (
@@ -13,12 +14,9 @@ import (
 )
 
 var (
-	db  *bbolt.DB
-	old string
-	//database   []Bucket
-	dbNodes    map[string]dbNode = make(map[string]dbNode)
-	dbError    error
-	errInvalid error = errors.New("invalid bucket/key name")
+	db      *bbolt.DB
+	old     string
+	dbNodes = make(map[string]dbNode)
 )
 
 type dbNode struct {
@@ -29,12 +27,11 @@ type dbNode struct {
 }
 
 func InitDatabase(file string) error {
-	dbError = nil
+	var err error
 	if db != nil {
 		CloseDatabase()
 	}
-	var err error
-	db, err = bbolt.Open(file, 0666, &bbolt.Options{Timeout: time.Second})
+	db, err = bbolt.Open(file, 0o666, &bbolt.Options{Timeout: time.Second})
 	if err != nil {
 		return err
 	}
@@ -45,7 +42,7 @@ func InitDatabase(file string) error {
 }
 
 func reloadDB() {
-	InitDatabase(old)
+	InitDatabase(old) //nolint:errcheck
 }
 
 func CloseDatabase() {
@@ -56,8 +53,8 @@ func CloseDatabase() {
 
 func getNodes() []*tview.TreeNode {
 	nodes := []*tview.TreeNode{}
-	db.View(func(tx *bbolt.Tx) error {
-		tx.ForEach(func(name []byte, b *bbolt.Bucket) error {
+	db.View(func(tx *bbolt.Tx) error { //nolint:errcheck
+		tx.ForEach(func(name []byte, b *bbolt.Bucket) error { //nolint:errcheck
 			node := process(name, nil, b)
 			nodes = append(nodes, node)
 			return nil
@@ -68,7 +65,6 @@ func getNodes() []*tview.TreeNode {
 }
 
 func process(name []byte, path []string, b *bbolt.Bucket) *tview.TreeNode {
-	//log.Println("processing", string(name), path)
 	path = append(path, string(name))
 	dbNodes[strings.Join(path, " -> ")] = dbNode{
 		path: path,
@@ -77,14 +73,14 @@ func process(name []byte, path []string, b *bbolt.Bucket) *tview.TreeNode {
 	}
 	node := tview.NewTreeNode(string(name)).SetReference(path).
 		SetSelectable(true).Collapse().SetColor(tcell.ColorGreen)
-	b.ForEach(func(k, v []byte) error {
+	b.ForEach(func(k, v []byte) error { //nolint:errcheck
 		if v == nil {
 			nested := b.Bucket(k)
 			child := process(k, path, nested)
 			child.Collapse()
 			node.AddChild(child)
 		} else {
-			childPath := append(path, string(k))
+			childPath := append(path, string(k)) //nolint:gocritic
 			node.AddChild(tview.NewTreeNode(string(k)).SetReference(childPath).
 				SetSelectable(true)).Collapse()
 			dbNodes[strings.Join(childPath, " -> ")] = dbNode{
@@ -135,7 +131,6 @@ func renameKey(node dbNode, value string) error {
 		return nil
 	})
 	return err
-
 }
 
 func renameBucket(node dbNode, name string) error {
@@ -188,8 +183,8 @@ func renameBucket(node dbNode, name string) error {
 
 func getParentBucket(path []string, tx *bbolt.Tx) (*bbolt.Bucket, error) {
 	if len(path) == 1 {
-		//parent is root
-		return nil, nil
+		// parent is root
+		return nil, nil //nolint:nilnil
 	}
 	return getBucket(path[:len(path)-1], tx)
 }
@@ -255,7 +250,7 @@ func emptyBucket(node dbNode) error {
 			}
 			return bucket.Delete(k)
 		})
-		return nil
+		return err
 	})
 }
 
@@ -312,14 +307,14 @@ func moveKey(node dbNode, path []string) error {
 		if err != nil {
 			return err
 		}
-		return bucket.Put([]byte(path[len(path)-1]), []byte(node.value))
+		return bucket.Put([]byte(path[len(path)-1]), node.value)
 	})
 }
 
 func moveBucket(node dbNode, path []string) error {
 	newname := path[len(path)-1]
 	if newname != string(node.name) {
-		//need to rename node first
+		// need to rename node first
 		if err := renameBucket(node, newname); err != nil {
 			return err
 		}
@@ -338,23 +333,22 @@ func moveBucket(node dbNode, path []string) error {
 			// this is a rename operation already done above
 			return nil
 		}
-		return tx.MoveBucket([]byte(node.name), parent, newparent)
+		return tx.MoveBucket(node.name, parent, newparent)
 	})
 }
 
 func createParentBucket(path []string, tx *bbolt.Tx) (*bbolt.Bucket, error) {
 	if len(path) == 1 {
-		return nil, nil
+		return nil, nil //nolint:nilnil
 	}
 	return createBucket(path[:len(path)-1], tx)
-
 }
 
 func createBucket(path []string, tx *bbolt.Tx) (*bbolt.Bucket, error) {
-	if path == nil || len(path) == 0 {
+	if path == nil {
 		return nil, errors.New("invalid path")
 	}
-	//create root bucket
+	// create root bucket
 	bucket, err := tx.CreateBucketIfNotExists([]byte(path[0]))
 	if err != nil {
 		return nil, err
@@ -379,7 +373,7 @@ func editNode(node dbNode, update string) error {
 	})
 }
 
-func stringToJSON(s string) []byte {
+func stringToJSON(s string) []byte { //nolint:varnamelen
 	var temp any
 	if err := json.Unmarshal([]byte(s), &temp); err != nil {
 		return []byte(s)

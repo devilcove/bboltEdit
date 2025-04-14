@@ -20,7 +20,7 @@ var (
 )
 
 // Show a navigable tree view of the current directory.
-func main() {
+func main() { //nolint:funlen
 	InitLog()
 	header = textView("header")
 	dbfile := "test.db"
@@ -36,7 +36,7 @@ func main() {
 		case tcell.KeyEsc, tcell.KeyTAB:
 			app.SetFocus(tree)
 		case tcell.KeyRune:
-			switch event.Rune() {
+			switch event.Rune() { //nolint:gocritic
 			case '?':
 				f := tree.GetInputCapture()
 				f(event)
@@ -69,7 +69,7 @@ func main() {
 		log.Println(event.Key(), event.Rune(), event.Modifiers())
 		switch event.Key() {
 		case tcell.KeyF1:
-			help := about(60, 30)
+			help := about(60, 22)
 			pager.AddPage("help", help, true, true)
 			app.SetFocus(help)
 			return nil
@@ -87,7 +87,7 @@ func main() {
 	}
 }
 
-// InitLog creates a file to use for debugging messages
+// InitLog creates a file to use for debugging messages.
 func InitLog() {
 	logFile, err := os.OpenFile(filepath.Join(os.TempDir(), "bboltEdit.log"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
 	if err != nil {

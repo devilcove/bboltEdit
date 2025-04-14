@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -12,7 +10,7 @@ type key struct {
 	help string
 }
 
-var treeMoveKeys []key = []key{
+var treeMoveKeys = []key{
 	{"j,↓,→ ", "move selection down by one node"},
 	{"k,↑,←", "move selection up by one node"},
 	{"g, home", "move selection to top node"},
@@ -22,7 +20,7 @@ var treeMoveKeys []key = []key{
 	{"Esc", "Close window/dialog"},
 }
 
-var mainKeys []key = []key{
+var mainKeys = []key{
 	{"F1", "show about/help"},
 	{"Esc", "close dialog/application"},
 	{"Ctrl-Q", "close application"},
@@ -30,7 +28,7 @@ var mainKeys []key = []key{
 	{"?", "detailed help for a window"},
 }
 
-func helpDialog(title string, width, height int, right, left []key) tview.Primitive {
+func helpDialog(title string, width, height int, right, left []key) tview.Primitive { //nolint:ireturn
 	table := tview.NewTable()
 	for i, key := range left {
 		table.SetCell(i, 0, tview.NewTableCell(key.name).
@@ -54,7 +52,7 @@ func helpDialog(title string, width, height int, right, left []key) tview.Primit
 	return dialog(grid, width, height)
 }
 
-func about(w, h int) tview.Primitive {
+func about(w, h int) tview.Primitive { //nolint:ireturn,varnamelen
 	table := tview.NewTable()
 	for i, key := range mainKeys {
 		table.SetCell(i, 0, tview.NewTableCell(key.name).
@@ -62,7 +60,7 @@ func about(w, h int) tview.Primitive {
 		table.SetCell(i, 1, tview.NewTableCell(key.help).
 			SetAlign(tview.AlignLeft).SetExpansion(1).SetTextColor(tcell.ColorBlue))
 	}
-	about := fmt.Sprint("\n\nbboltEdit\n\n© 2025 Matthew R Kasun\n\nhttps://github.com/devilcove/bboltEdit")
+	about := "\n\nbboltEdit\n\nVersion 0.1.0\n\n© 2025 Matthew R Kasun\n\nhttps://github.com/devilcove/bboltEdit" //nolint:lll
 	grid := tview.NewGrid().
 		SetRows(0, 1, 1, 1, 1, 0).
 		SetColumns(0, 1).

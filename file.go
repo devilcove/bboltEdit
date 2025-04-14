@@ -20,7 +20,7 @@ var (
 	newRootDir = make(chan string)
 )
 
-func newFiles() *tview.Grid {
+func newFiles() *tview.Grid { //nolint:funlen
 	rightKeys := []key{
 		{"o", "open dialog to change directory"},
 		{"p", "println node table to logs"},
@@ -33,7 +33,7 @@ func newFiles() *tview.Grid {
 	fileGrid := tview.NewGrid().
 		SetRows(1, 0, 1).
 		SetColumns(0).
-		//SetBorders(true).
+		// SetBorders(true).
 		AddItem(top,
 			0, 0, 1, 1, 0, 0, false).
 		AddItem(textView("press enter to expand directory or select file"),

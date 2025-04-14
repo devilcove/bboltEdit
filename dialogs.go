@@ -9,7 +9,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-func dialog(p tview.Primitive, w, h int) tview.Primitive {
+func dialog(p tview.Primitive, w, h int) tview.Primitive { //nolint:ireturn,varnamelen
 	return tview.NewFlex().
 		AddItem(nil, 0, 1, false).
 		AddItem(tview.NewFlex().
@@ -152,14 +152,14 @@ func moveForm(node dbNode, dialog string) *tview.Form {
 }
 
 func renameForm(node dbNode, dialog string) *tview.Form {
-	f := tview.NewForm()
-	f.AddTextView("path:", strings.Join(node.path, " "), 0, 1, true, false).
+	form := tview.NewForm()
+	form.AddTextView("path:", strings.Join(node.path, " "), 0, 1, true, false).
 		AddInputField("new name", node.path[len(node.path)-1], 0, nil, nil).
 		AddButton("cancel", func() {
 			pager.RemovePage(dialog)
 		}).
 		AddButton("Rename", func() {
-			newName := f.GetFormItem(1).(*tview.InputField).GetText()
+			newName := form.GetFormItem(1).(*tview.InputField).GetText()
 			if err := renameEntry(node, newName); err != nil {
 				showError(err.Error())
 				return
@@ -174,8 +174,8 @@ func renameForm(node dbNode, dialog string) *tview.Form {
 			pager.RemovePage("rename")
 		}).
 		SetButtonsAlign(tview.AlignCenter)
-	f.SetBorder(true).SetTitle("Rename").SetTitleAlign(tview.AlignCenter)
-	return f
+	form.SetBorder(true).SetTitle("Rename").SetTitleAlign(tview.AlignCenter)
+	return form
 }
 
 func editForm(node dbNode, dialog string) *tview.Form {
@@ -210,14 +210,14 @@ func editForm(node dbNode, dialog string) *tview.Form {
 	return form
 }
 
-func dirForm(name, startsearch string, ch chan string) *tview.Form {
+func dirForm(name, startsearch string, channel chan string) *tview.Form {
 	form := tview.NewForm().
 		AddInputField("path", startsearch, 0, nil, nil).
 		AddButton("Cancel", func() {
 			pager.HidePage(name)
 		}).SetButtonsAlign(tview.AlignCenter)
 	form.AddButton("Search", func() {
-		ch <- form.GetFormItem(0).(*tview.InputField).GetText()
+		channel <- form.GetFormItem(0).(*tview.InputField).GetText()
 		pager.HidePage(name).ShowPage("file")
 	})
 	form.SetBorder(true).SetTitle("Directory to Search").SetTitleAlign(tview.AlignCenter)
