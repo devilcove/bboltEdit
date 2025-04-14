@@ -23,6 +23,7 @@ func newTree(detail *tview.TextView) *tview.TreeView {
 		{"r", "(r)ename key or bucket"},
 		{"x", "e(x)pand all nodes"},
 		{"?", "show help"},
+		{"Ctrl-R", "reload database"},
 	}
 
 	rootDir := "."

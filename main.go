@@ -4,6 +4,7 @@ package main
 import (
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -31,8 +32,16 @@ func main() {
 	}
 	details = tview.NewTextView()
 	details.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyTAB {
+		switch event.Key() {
+		case tcell.KeyEsc, tcell.KeyTAB:
 			app.SetFocus(tree)
+		case tcell.KeyRune:
+			switch event.Rune() {
+			case '?':
+				f := tree.GetInputCapture()
+				f(event)
+			}
+			return nil
 		}
 		return event
 	})
@@ -60,13 +69,10 @@ func main() {
 		log.Println(event.Key(), event.Rune(), event.Modifiers())
 		switch event.Key() {
 		case tcell.KeyF1:
-			help := helpView()
+			help := about(60, 30)
 			pager.AddPage("help", help, true, true)
 			app.SetFocus(help)
 			return nil
-		case tcell.KeyF2:
-			front, item := pager.GetFrontPage()
-			log.Println("pages", pager.GetPageNames(false), pager.GetPageNames(true), front, item)
 		case tcell.KeyCtrlQ:
 			app.Stop()
 		case tcell.KeyCtrlC:
@@ -83,7 +89,7 @@ func main() {
 
 // InitLog creates a file to use for debugging messages
 func InitLog() {
-	logFile, err := os.CreateTemp("", "bblotEdit*.log")
+	logFile, err := os.OpenFile(filepath.Join(os.TempDir(), "bboltEdit.log"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -103,7 +109,7 @@ func mainGrid() *tview.Grid {
 		SetColumns(0, 0).
 		SetBorders(true).
 		AddItem(header, 0, 0, 1, 2, 0, 0, false).
-		AddItem(textView("press ? for help, esc or ctrl-Q to quit"), 2, 0, 1, 2, 0, 0, false).
+		AddItem(textView("press ? or F1 for help, esc or ctrl-Q to quit"), 2, 0, 1, 2, 0, 0, false).
 		AddItem(tree, 1, 0, 1, 1, 0, 0, true).
 		AddItem(details, 1, 1, 1, 1, 0, 0, false)
 	grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {

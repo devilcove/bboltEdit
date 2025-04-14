@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -17,6 +19,15 @@ var treeMoveKeys []key = []key{
 	{"G, end", "move selection to bottom node"},
 	{"Ctrl-F, page down", "move selection down by one page"},
 	{"Ctrl-B, page up", "move selection up by one page"},
+	{"Esc", "Close window/dialog"},
+}
+
+var mainKeys []key = []key{
+	{"F1", "show about/help"},
+	{"Esc", "close dialog/application"},
+	{"Ctrl-Q", "close application"},
+	{"", ""},
+	{"?", "detailed help for a window"},
 }
 
 func helpDialog(title string, width, height int, right, left []key) tview.Primitive {
@@ -43,11 +54,25 @@ func helpDialog(title string, width, height int, right, left []key) tview.Primit
 	return dialog(grid, width, height)
 }
 
-func helpView() *tview.Modal {
-	return tview.NewModal().
-		SetText("This would be the help menu").
-		AddButtons([]string{"Close"}).
-		SetBackgroundColor(tcell.ColorBlueViolet)
+func about(w, h int) tview.Primitive {
+	table := tview.NewTable()
+	for i, key := range mainKeys {
+		table.SetCell(i, 0, tview.NewTableCell(key.name).
+			SetAlign(tview.AlignCenter).SetExpansion(1).SetTextColor(tcell.ColorGrey))
+		table.SetCell(i, 1, tview.NewTableCell(key.help).
+			SetAlign(tview.AlignLeft).SetExpansion(1).SetTextColor(tcell.ColorBlue))
+	}
+	about := fmt.Sprint("\n\nbboltEdit\n\n© 2025 Matthew R Kasun\n\nhttps://github.com/devilcove/bboltEdit")
+	grid := tview.NewGrid().
+		SetRows(0, 1, 1, 1, 1, 0).
+		SetColumns(0, 1).
+		AddItem(tview.NewTextView().SetText(about).
+			SetTextAlign(tview.AlignCenter), 0, 0, 3, 1, 0, 0, false).
+		AddItem(tview.NewTextView().SetText("Application Key Bindings").
+			SetTextAlign(tview.AlignCenter), 3, 0, 2, 2, 0, 0, false).
+		AddItem(table, 5, 0, 1, 1, 0, 0, true)
+	grid.SetBorder(true)
+	return dialog(grid, w, h)
 }
 
 func errorView(message string) *tview.Modal {
