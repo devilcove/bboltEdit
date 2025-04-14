@@ -29,6 +29,14 @@ func addKeyForm(node dbNode, dialog string) *tview.Form {
 			pager.RemovePage(dialog)
 			app.SetFocus(tree)
 		})
+	form.AddButton("Validate JSON", func() {
+		value := form.GetFormItem(2).(*tview.TextArea).GetText()
+		if json.Valid([]byte(value)) {
+			form.SetBorderColor(tcell.ColorGreen)
+		} else {
+			form.SetBorderColor(tcell.ColorRed)
+		}
+	})
 	form.AddButton("Add", func() {
 		newpath := strings.Split(form.GetFormItem(0).(*tview.InputField).GetText(), " ")
 		name := form.GetFormItem(1).(*tview.InputField).GetText()

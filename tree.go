@@ -17,7 +17,7 @@ func newTree(detail *tview.TextView) *tview.TreeView {
 		{"b", "create new (b)ucket"},
 		{"d", "(d)elete key or bucket"},
 		{"e", "(e)mpty bucket or (e)dit key"},
-		{"k", "add new (k)ey"},
+		{"a,k", "(a)dd new (k)ey"},
 		{"m", "(m)ove key or bucket"},
 		{"o", "(o)pen file selection"},
 		{"r", "(r)ename key or bucket"},
@@ -93,7 +93,7 @@ func newTree(detail *tview.TextView) *tview.TreeView {
 					return nil
 				}
 			//add key
-			case 'k':
+			case 'a', 'k':
 				node := getCurrentNode()
 				if node.path == nil {
 					showError("cannot add key to root")
