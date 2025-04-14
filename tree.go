@@ -17,7 +17,7 @@ func newTree(detail *tview.TextView) *tview.TreeView {
 		{"b", "create new (b)ucket"},
 		{"d", "(d)elete key or bucket"},
 		{"e", "(e)mpty bucket or (e)dit key"},
-		{"a,k", "(a)dd new (k)ey"},
+		{"a", "(a)dd new key"},
 		{"m", "(m)ove key or bucket"},
 		{"o", "(o)pen file selection"},
 		{"r", "(r)ename key or bucket"},
@@ -93,7 +93,7 @@ func newTree(detail *tview.TextView) *tview.TreeView {
 					return nil
 				}
 			//add key
-			case 'a', 'k':
+			case 'a':
 				node := getCurrentNode()
 				if node.path == nil {
 					showError("cannot add key to root")
@@ -113,11 +113,13 @@ func newTree(detail *tview.TextView) *tview.TreeView {
 				}
 				move := modal(moveForm(node, "dialog"), 60, 10)
 				pager.AddPage("dialog", move, true, true)
+				return nil
 			//open filepicker
 			case 'o':
 				file := dialog(newFiles(), 60, 30)
 				pager.AddPage("file", file, true, true)
 				app.SetFocus(file)
+				return nil
 			//rename bucket/key
 			case 'r':
 				node := getCurrentNode()
@@ -132,13 +134,14 @@ func newTree(detail *tview.TextView) *tview.TreeView {
 			//expand all nodes
 			case 'x':
 				tree.GetRoot().ExpandAll()
+				return nil
 			//show help
 			case '?':
 				help := helpDialog("Key Bindings", 100, 15, treeKeys, treeMoveKeys)
 				pager.AddPage("help", help, true, true)
 				app.SetFocus(help)
+				return nil
 			}
-			return nil
 		}
 		return event
 	})
