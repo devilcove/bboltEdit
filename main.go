@@ -66,7 +66,7 @@ func main() { //nolint:funlen
 
 	app = tview.NewApplication().SetRoot(pager, true).EnableMouse(true)
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		log.Println(event.Key(), event.Rune(), event.Modifiers())
+		log.Println("app key handler", event.Name())
 		switch event.Key() {
 		case tcell.KeyF1:
 			help := about(60, 22)
@@ -78,7 +78,7 @@ func main() { //nolint:funlen
 		case tcell.KeyCtrlC:
 			return nil
 		}
-		log.Println("app key handling: passing ", event.Key())
+		log.Println("app key handling: passing ", event.Name())
 		return event
 	})
 

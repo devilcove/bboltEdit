@@ -283,6 +283,72 @@ func addKey(path []string, name, value string) error {
 	})
 }
 
+func copyItem(node dbNode, newpath []string) error {
+	if node.kind == "bucket" {
+		return copyBucket(node, newpath)
+	}
+	return copyKey(node, newpath)
+}
+
+func copyBucket(node dbNode, newpath []string) error {
+	return db.Update(func(tx *bbolt.Tx) error {
+		oldBucket, err := getBucket(node.path, tx)
+		if err != nil {
+			return err
+		}
+		bucket, err := createBucket(newpath, tx)
+		if err != nil {
+			return err
+		}
+		oldBucket.ForEach(func(k, v []byte) error {
+			if v == nil {
+				if err := copyBucketContent(oldBucket, bucket); err != nil {
+					return err
+				}
+			} else {
+				if err := bucket.Put(k, v); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		return nil
+	})
+}
+
+func copyBucketContent(old, new *bbolt.Bucket) error {
+	return old.ForEach(func(k, v []byte) error {
+		if v == nil {
+			nested, err := new.CreateBucket(k)
+			if err != nil {
+				return err
+			}
+			oldnested := old.Bucket(k)
+			if err := copyBucketContent(oldnested, nested); err != nil {
+				return err
+			}
+		} else {
+			if err := new.Put(k, v); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func copyKey(node dbNode, newpath []string) error {
+	if len(newpath) == 1 {
+		return errors.New("cannot create key in root bucket")
+	}
+	return db.Update(func(tx *bbolt.Tx) error {
+		bucket, err := createParentBucket(newpath, tx)
+		if err != nil {
+			return err
+		}
+		return bucket.Put([]byte(newpath[len(newpath)-1]), []byte(node.value))
+	})
+}
+
 func moveItem(node dbNode, newpath []string) error {
 	if node.kind == "bucket" {
 		return moveBucket(node, newpath)

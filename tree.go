@@ -13,7 +13,7 @@ import (
 
 func newTree(detail *tview.TextView) *tview.TreeView { //nolint:funlen
 	treeKeys := []key{
-		{"c", "(c)ollapse all nodes"},
+		{"c", "(c) key or bucket"},
 		{"b", "create new (b)ucket"},
 		{"d", "(d)elete key or bucket"},
 		{"e", "(e)mpty bucket or (e)dit key"},
@@ -23,7 +23,10 @@ func newTree(detail *tview.TextView) *tview.TreeView { //nolint:funlen
 		{"r", "(r)ename key or bucket"},
 		{"x", "e(x)pand all nodes"},
 		{"?", "show help"},
+		{"Enter", "expand or colapse node"},
 		{"Ctrl-R", "reload database"},
+		{"Ctrl-C", "colapse all nodes"},
+		{"Ctrl-C", "expand all nodes"},
 	}
 
 	rootDir := "."
@@ -43,19 +46,32 @@ func newTree(detail *tview.TextView) *tview.TreeView { //nolint:funlen
 	tree.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		log.Println("tree key handler", event.Key(), event.Rune(), event.Modifiers())
 		switch event.Key() {
+		// callapse all nodes
+		case tcell.KeyCtrlC:
+			tree.GetRoot().CollapseAll()
+			// reload database
 		case tcell.KeyCtrlR:
 			reloadDB()
 			root.SetChildren(getNodes())
 			tree.SetRoot(root)
+			// expand all nodes
+		case tcell.KeyCtrlX:
+			tree.GetRoot().ExpandAll()
+			// exit app
 		case tcell.KeyEsc:
 			app.Stop()
+			// change focue
 		case tcell.KeyTAB:
 			app.SetFocus(detail)
+			// key handling
 		case tcell.KeyRune:
 			log.Println("tree key handler, runes", event.Rune())
 			switch event.Rune() {
 			// collapse node
 			case 'c':
+				node := getCurrentNode()
+				copy := dialog(copyForm(node, "dialog"), 60, 12)
+				pager.AddPage("dialog", copy, true, true)
 				tree.GetRoot().CollapseAll()
 			// add bucket
 			case 'b':
@@ -129,10 +145,6 @@ func newTree(detail *tview.TextView) *tview.TreeView { //nolint:funlen
 				}
 				rename := modal(renameForm(node, "dialog"), 40, 10)
 				pager.AddPage("dialog", rename, true, true)
-				return nil
-			// expand all nodes
-			case 'x':
-				tree.GetRoot().ExpandAll()
 				return nil
 			// show help
 			case '?':
