@@ -203,6 +203,26 @@ func renameForm(node dbNode, dialog string) *tview.Form {
 	return form
 }
 
+func searchForm(dialog string) *tview.Form {
+	form := tview.NewForm()
+	form.AddInputField("search path", "", 0, nil, nil).
+		AddButton("Cancel", func() {
+			pager.RemovePage(dialog)
+		}).
+		AddButton("Search", func() {
+			path := form.GetFormItem(0).(*tview.InputField).GetText()
+			searchPath := strings.Split(path, " ")
+			if err := searchEntry(searchPath); err != nil {
+				showError(err.Error())
+				return
+			}
+			selectNode(searchPath)
+			pager.RemovePage(dialog)
+		})
+	form.SetBorder(true).SetTitle("Search").SetTitleAlign(tview.AlignCenter)
+	return form
+}
+
 func editForm(node dbNode, dialog string) *tview.Form {
 	value := prettyString(node.value)
 	form := tview.NewForm().

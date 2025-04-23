@@ -27,7 +27,7 @@ func newTree(detail *tview.TextView) *tview.TreeView { //nolint:funlen
 		{"Enter", "expand or colapse node"},
 		{"Ctrl-R", "reload database"},
 		{"Ctrl-C", "colapse all nodes"},
-		{"Ctrl-C", "expand all nodes"},
+		{"Ctrl-X", "expand all nodes"},
 	}
 
 	rootDir := "."
@@ -146,9 +146,13 @@ func newTree(detail *tview.TextView) *tview.TreeView { //nolint:funlen
 				rename := modal(renameForm(node, "dialog"), 40, 10)
 				pager.AddPage("dialog", rename, true, true)
 				return nil
+			case 's':
+				search := modal(searchForm("dialog"), 40, 10)
+				pager.AddPage("dialog", search, true, true)
+				return nil
 			// show help
 			case '?':
-				help := helpDialog("Key Bindings", 100, 15, treeKeys, treeMoveKeys)
+				help := helpDialog("Key Bindings", 100, 20, treeKeys, treeMoveKeys)
 				pager.AddPage("help", help, true, true)
 				app.SetFocus(help)
 				return nil

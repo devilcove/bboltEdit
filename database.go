@@ -181,6 +181,34 @@ func renameBucket(node dbNode, name string) error {
 	return err
 }
 
+func searchEntry(path []string) error {
+	var found bool
+	db.View(func(tx *bbolt.Tx) error {
+		_, err := getBucket(path, tx)
+		if err == nil {
+			found = true
+			return nil
+		}
+		if len(path) == 1 {
+			return errors.New("not found")
+		}
+		parent, err := getParentBucket(path, tx)
+		if err != nil {
+			return err
+		}
+		key := parent.Get([]byte(path[len(path)-1]))
+		if key != nil {
+			found = true
+			return nil
+		}
+		return nil
+	})
+	if !found {
+		return errors.New("not found")
+	}
+	return nil
+}
+
 func getParentBucket(path []string, tx *bbolt.Tx) (*bbolt.Bucket, error) {
 	if len(path) == 1 {
 		// parent is root
