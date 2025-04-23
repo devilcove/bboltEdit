@@ -76,7 +76,7 @@ func main() { //nolint:funlen
 		case tcell.KeyCtrlQ:
 			app.Stop()
 		case tcell.KeyCtrlC:
-			return nil
+			return tcell.NewEventKey(tcell.KeyCtrlC, 0, tcell.ModNone)
 		}
 		log.Println("app key handling: passing ", event.Name())
 		return event

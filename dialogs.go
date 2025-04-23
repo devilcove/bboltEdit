@@ -126,7 +126,7 @@ func emptyForm(node dbNode, dialog string) *tview.Form {
 	return form
 }
 
-func moveForm(node dbNode, dialog string) *tview.Form {
+func moveForm(node dbNode, dialog string) *tview.Form { //nolint:dupl
 	currentPath := strings.Join(node.path, " ")
 	form := tview.NewForm().
 		AddTextView("current path", currentPath, 0, 1, true, true).
@@ -151,7 +151,7 @@ func moveForm(node dbNode, dialog string) *tview.Form {
 	return form
 }
 
-func copyForm(node dbNode, dialog string) *tview.Form {
+func copyForm(node dbNode, dialog string) *tview.Form { //nolint:dupl
 	currentPath := strings.Join(node.path, " ")
 	form := tview.NewForm().
 		AddTextView("source path", currentPath, 0, 1, true, true).
@@ -172,7 +172,7 @@ func copyForm(node dbNode, dialog string) *tview.Form {
 		pager.RemovePage(dialog)
 		app.SetFocus(tree)
 	})
-	form.SetBorder(true).SetTitle("Move Item").SetTitleAlign(tview.AlignCenter)
+	form.SetBorder(true).SetTitle("Copy Item").SetTitleAlign(tview.AlignCenter)
 	return form
 }
 
@@ -200,6 +200,26 @@ func renameForm(node dbNode, dialog string) *tview.Form {
 		}).
 		SetButtonsAlign(tview.AlignCenter)
 	form.SetBorder(true).SetTitle("Rename").SetTitleAlign(tview.AlignCenter)
+	return form
+}
+
+func searchForm(dialog string) *tview.Form {
+	form := tview.NewForm()
+	form.AddInputField("search path", "", 0, nil, nil).
+		AddButton("Cancel", func() {
+			pager.RemovePage(dialog)
+		}).
+		AddButton("Search", func() {
+			path := form.GetFormItem(0).(*tview.InputField).GetText()
+			searchPath := strings.Split(path, " ")
+			if err := searchEntry(searchPath); err != nil {
+				showError(err.Error())
+				return
+			}
+			selectNode(searchPath)
+			pager.RemovePage(dialog)
+		})
+	form.SetBorder(true).SetTitle("Search").SetTitleAlign(tview.AlignCenter)
 	return form
 }
 
