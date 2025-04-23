@@ -60,7 +60,7 @@ func about(w, h int) tview.Primitive { //nolint:ireturn,varnamelen
 		table.SetCell(i, 1, tview.NewTableCell(key.help).
 			SetAlign(tview.AlignLeft).SetExpansion(1).SetTextColor(tcell.ColorBlue))
 	}
-	about := "\n\nbboltEdit\n\nVersion 0.1.1\n\n© 2025 Matthew R Kasun\n\nhttps://github.com/devilcove/bboltEdit" //nolint:lll
+	about := "\n\nbboltEdit\n\nVersion 0.1.2\n\n© 2025 Matthew R Kasun\n\nhttps://github.com/devilcove/bboltEdit" //nolint:lll
 	grid := tview.NewGrid().
 		SetRows(0, 1, 1, 1, 1, 0).
 		SetColumns(0, 1).
