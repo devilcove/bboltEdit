@@ -71,8 +71,8 @@ func newTree(detail *tview.TextView) *tview.TreeView { //nolint:funlen
 			// collapse node
 			case 'c':
 				node := getCurrentNode()
-				copy := dialog(copyForm(node, "dialog"), 60, 12)
-				pager.AddPage("dialog", copy, true, true)
+				copied := dialog(copyForm(node, "dialog"), 60, 12)
+				pager.AddPage("dialog", copied, true, true)
 			// add bucket
 			case 'b':
 				node := getCurrentNode()

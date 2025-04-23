@@ -183,7 +183,7 @@ func renameBucket(node dbNode, name string) error {
 
 func searchEntry(path []string) error {
 	var found bool
-	db.View(func(tx *bbolt.Tx) error {
+	db.View(func(tx *bbolt.Tx) error { //nolint:errcheck
 		_, err := getBucket(path, tx)
 		if err == nil {
 			found = true
@@ -328,7 +328,7 @@ func copyBucket(node dbNode, newpath []string) error {
 		if err != nil {
 			return err
 		}
-		oldBucket.ForEach(func(k, v []byte) error {
+		return oldBucket.ForEach(func(k, v []byte) error {
 			if v == nil {
 				if err := copyBucketContent(oldBucket, bucket); err != nil {
 					return err
@@ -340,23 +340,22 @@ func copyBucket(node dbNode, newpath []string) error {
 			}
 			return nil
 		})
-		return nil
 	})
 }
 
-func copyBucketContent(old, new *bbolt.Bucket) error {
-	return old.ForEach(func(k, v []byte) error {
+func copyBucketContent(src, dst *bbolt.Bucket) error {
+	return src.ForEach(func(k, v []byte) error {
 		if v == nil {
-			nested, err := new.CreateBucket(k)
+			nested, err := dst.CreateBucket(k)
 			if err != nil {
 				return err
 			}
-			oldnested := old.Bucket(k)
+			oldnested := src.Bucket(k)
 			if err := copyBucketContent(oldnested, nested); err != nil {
 				return err
 			}
 		} else {
-			if err := new.Put(k, v); err != nil {
+			if err := dst.Put(k, v); err != nil {
 				return err
 			}
 		}
@@ -373,7 +372,7 @@ func copyKey(node dbNode, newpath []string) error {
 		if err != nil {
 			return err
 		}
-		return bucket.Put([]byte(newpath[len(newpath)-1]), []byte(node.value))
+		return bucket.Put([]byte(newpath[len(newpath)-1]), node.value)
 	})
 }
 

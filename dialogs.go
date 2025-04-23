@@ -126,7 +126,7 @@ func emptyForm(node dbNode, dialog string) *tview.Form {
 	return form
 }
 
-func moveForm(node dbNode, dialog string) *tview.Form {
+func moveForm(node dbNode, dialog string) *tview.Form { //nolint:dupl
 	currentPath := strings.Join(node.path, " ")
 	form := tview.NewForm().
 		AddTextView("current path", currentPath, 0, 1, true, true).
@@ -151,7 +151,7 @@ func moveForm(node dbNode, dialog string) *tview.Form {
 	return form
 }
 
-func copyForm(node dbNode, dialog string) *tview.Form {
+func copyForm(node dbNode, dialog string) *tview.Form { //nolint:dupl
 	currentPath := strings.Join(node.path, " ")
 	form := tview.NewForm().
 		AddTextView("source path", currentPath, 0, 1, true, true).
