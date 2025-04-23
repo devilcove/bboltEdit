@@ -13,7 +13,7 @@ import (
 
 func newTree(detail *tview.TextView) *tview.TreeView { //nolint:funlen
 	treeKeys := []key{
-		{"c", "(c) key or bucket"},
+		{"c", "(c)opy key or bucket"},
 		{"b", "create new (b)ucket"},
 		{"d", "(d)elete key or bucket"},
 		{"e", "(e)mpty bucket or (e)dit key"},
@@ -21,6 +21,7 @@ func newTree(detail *tview.TextView) *tview.TreeView { //nolint:funlen
 		{"m", "(m)ove key or bucket"},
 		{"o", "(o)pen file selection"},
 		{"r", "(r)ename key or bucket"},
+		{"s", "(s)earch for key or bucket"},
 		{"x", "e(x)pand all nodes"},
 		{"?", "show help"},
 		{"Enter", "expand or colapse node"},
@@ -44,7 +45,7 @@ func newTree(detail *tview.TextView) *tview.TreeView { //nolint:funlen
 		updateDetail(detail, node)
 	})
 	tree.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		log.Println("tree key handler", event.Key(), event.Rune(), event.Modifiers())
+		log.Println("tree key handler", tcell.KeyNames[event.Key()])
 		switch event.Key() {
 		// callapse all nodes
 		case tcell.KeyCtrlC:
@@ -72,7 +73,6 @@ func newTree(detail *tview.TextView) *tview.TreeView { //nolint:funlen
 				node := getCurrentNode()
 				copy := dialog(copyForm(node, "dialog"), 60, 12)
 				pager.AddPage("dialog", copy, true, true)
-				tree.GetRoot().CollapseAll()
 			// add bucket
 			case 'b':
 				node := getCurrentNode()

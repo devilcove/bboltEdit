@@ -172,7 +172,7 @@ func copyForm(node dbNode, dialog string) *tview.Form {
 		pager.RemovePage(dialog)
 		app.SetFocus(tree)
 	})
-	form.SetBorder(true).SetTitle("Move Item").SetTitleAlign(tview.AlignCenter)
+	form.SetBorder(true).SetTitle("Copy Item").SetTitleAlign(tview.AlignCenter)
 	return form
 }
 
