@@ -119,11 +119,26 @@ func addNodes(t *core.Tree, nodes []*TreeNode) {
 }
 
 func nodeContext(m *core.Scene) {
-	core.NewButton(m).SetText("Quit").OnClick(func(e events.Event) {
-		app.Close()
+	core.NewButton(m).SetText("Create").OnClick(func(e events.Event) {
+		log.Println("Create")
 	})
-	core.NewButton(m).SetText("Display").OnClick(func(e events.Event) {
-		//log.Println("info", m.Body., m.Body.This)
+	core.NewButton(m).SetText("Delete").OnClick(func(e events.Event) {
+		log.Println("info", m.This.AsTree().Parent)
+	})
+	core.NewButton(m).SetText("Empty").OnClick(func(e events.Event) {
+		log.Println("Empty")
+	})
+	core.NewButton(m).SetText("Add Key").OnClick(func(e events.Event) {
+		log.Println(m.This.AsTree().Name)
+	})
+	core.NewButton(m).SetText("Move").OnClick(func(e events.Event) {
+		log.Println(m.This.AsTree().Name)
+	})
+	core.NewButton(m).SetText("Rename").OnClick(func(e events.Event) {
+		log.Println(m.This.AsTree().Name)
+	})
+	core.NewButton(m).SetText("Search").OnClick(func(e events.Event) {
+		log.Println(m.This.AsTree().Name)
 	})
 }
 
