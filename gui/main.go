@@ -46,22 +46,8 @@ func main() {
 	nodes := getNodes()
 	app = core.NewBody("BboltEdit")
 	b := core.NewButton(app).SetText("Hello World")
-	b.OnClick(func(e events.Event) {
-		core.MessageSnackbar(app, "button pressed")
-	})
 	b.SetMenu(func(m *core.Scene) {
-		core.NewButton(m).SetText("Quit").OnClick(func(e events.Event) {
-			app.Close()
-		})
-		core.NewButton(m).SetText("Send Message")
-	})
-	b.Scene.ContextMenus = nil
-	b.ContextMenus = append(b.ContextMenus, func(m *core.Scene) {
-		core.NewButton(m).SetText("Quit").OnClick(func(e events.Event) {
-			app.Close()
-		})
-		b := core.NewButton(m).SetText("Open File")
-		b.OnClick(func(e events.Event) {
+		core.NewButton(m).SetText("Open File").OnClick(func(e events.Event) {
 			d := core.NewBody("File Open")
 			ft := filetree.NewTree(d).OpenPath(".")
 			selected := []string{}
@@ -87,6 +73,13 @@ func main() {
 			d.RunDialog(b)
 			log.Println(selected)
 		})
+		core.NewButton(m).SetText("Quit").OnClick(func(e events.Event) {
+			app.Close()
+		})
+		core.NewButton(m).SetText("Send Message")
+	})
+	b.Scene.ContextMenus = nil
+	b.ContextMenus = append(b.ContextMenus, func(m *core.Scene) {
 		b = core.NewButton(m).SetText("Error")
 		b.OnClick(func(e events.Event) {
 			core.ErrorDialog(b, errors.New("this is an error"), "title")
@@ -113,7 +106,7 @@ func addNodes(t *core.Tree, nodes []*TreeNode) {
 		if node.IsBucket {
 			item.SetIcon(icons.AddCircle)
 		}
-		//item.ContextMenus = nil
+		item.ContextMenus = nil
 		item.ContextMenus = append(item.ContextMenus, nodeContext)
 		item.Scene.Data = node
 		item.ValueTitle = strings.Join(node.Path, " ")
