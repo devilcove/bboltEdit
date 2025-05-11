@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"log"
 	"strings"
 
@@ -47,7 +46,7 @@ func main() {
 	openDB("test.db")
 	nodes := getNodes()
 	app = core.NewBody("BboltEdit")
-	b := core.NewButton(app).SetText("Hello World")
+	b := core.NewButton(app).SetText("File")
 	b.SetMenu(func(m *core.Scene) {
 		core.NewButton(m).SetText("Open File").OnClick(func(e events.Event) {
 			d := core.NewBody("File Open")
@@ -81,12 +80,6 @@ func main() {
 		core.NewButton(m).SetText("Send Message")
 	})
 	b.Scene.ContextMenus = nil
-	b.ContextMenus = append(b.ContextMenus, func(m *core.Scene) {
-		b = core.NewButton(m).SetText("Error")
-		b.OnClick(func(e events.Event) {
-			core.ErrorDialog(b, errors.New("this is an error"), "title")
-		})
-	})
 
 	panes = core.NewSplits(app).SetSplits(.3, .7)
 	left := core.NewFrame(panes)
@@ -96,6 +89,7 @@ func main() {
 	addNodes(tr, nodes)
 	tr.Scene.ContextMenus = nil
 	tr.ContextMenus = nil
+	tr.ContextMenus = append(tr.ContextMenus, mainContext)
 	tr.SetReadOnly(true)
 
 	app.RunMainWindow()
@@ -119,6 +113,13 @@ func addNodes(t *core.Tree, nodes []*TreeNode) {
 		})
 		addNodes(item, node.Children)
 	}
+}
+
+func mainContext(m *core.Scene) {
+	button := core.NewButton(m).SetText("Create Bucket")
+	button.OnClick(func(e events.Event) {
+		createBucketDialog("", button)
+	})
 }
 
 func keyContext(m *core.Scene) {
