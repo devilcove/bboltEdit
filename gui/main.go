@@ -199,7 +199,11 @@ func updateDetails(item string) {
 			buf.SetText(node.Value)
 		})
 		core.NewButton(frame).SetText("Validate Json").OnClick(func(e events.Event) {
-			log.Println("validate json")
+			if json.Valid(buf.Text()) {
+				core.MessageSnackbar(details, "valid json")
+			} else {
+				core.MessageSnackbar(details, "not valid json")
+			}
 		})
 		core.NewButton(frame).SetText("Update").OnClick(func(e events.Event) {
 			if err := UpdateKey(node, toJSON(buf.Text())); err != nil {

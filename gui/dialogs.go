@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"strings"
 
 	"cogentcore.org/core/core"
 	"cogentcore.org/core/events"
+	"cogentcore.org/core/texteditor"
 )
 
 func createBucketDialog(path string, button *core.Button) {
@@ -79,16 +81,23 @@ func addKeyDialog(path string, button *core.Button) {
 	core.NewText(d).SetText("Key Name")
 	name := core.NewTextField(d)
 	core.NewText(d).SetText("Key Value")
-	value := core.NewTextField(d)
+	value := texteditor.NewEditor(d).Buffer
 	d.AddBottomBar(func(bar *core.Frame) {
 		d.AddCancel(bar)
+		core.NewButton(bar).SetText("validate json").OnClick(func(e events.Event) {
+			if json.Valid(value.Text()) {
+				core.MessageSnackbar(bar, "valid json")
+			} else {
+				core.MessageSnackbar(bar, "not valid json")
+			}
+		})
 		d.AddOK(bar).OnClick(func(e events.Event) {
-			if strings.Contains(value.Text(), " ") {
+			if strings.Contains(name.Text(), " ") {
 				core.ErrorDialog(button, errors.New("key name cannot contain spaces"), "Add Key")
 				return
 			}
 			path := strings.Split(parent.Text(), " ")
-			if err := CreateKey(name.Text(), value.Text(), path); err != nil {
+			if err := CreateKey(name.Text(), toJSON(value.Text()), path); err != nil {
 				core.ErrorDialog(button, err, "Add Key")
 				return
 			}

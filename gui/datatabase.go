@@ -125,7 +125,7 @@ func createBucket(path []string, tx *bbolt.Tx) (*bbolt.Bucket, error) {
 	return bucket, nil
 }
 
-func CreateKey(name, value string, path []string) error {
+func CreateKey(name string, value []byte, path []string) error {
 	log.Println("Create Key", path, name, value)
 	return db.Update(func(tx *bbolt.Tx) error {
 		bucket, err := createBucket(path, tx)
@@ -135,7 +135,7 @@ func CreateKey(name, value string, path []string) error {
 		if bucket.Get([]byte(name)) != nil {
 			return keyExistsErr
 		}
-		return bucket.Put([]byte(name), []byte(value))
+		return bucket.Put([]byte(name), value)
 	})
 }
 
