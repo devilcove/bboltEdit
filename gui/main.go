@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"log"
 	"strings"
@@ -103,42 +105,71 @@ func addNodes(t *core.Tree, nodes []*TreeNode) {
 	for _, node := range nodes {
 		item := core.NewTree(t).SetText(string(node.Name))
 		item.SetReadOnly(true)
+		item.ContextMenus = nil
 		if node.IsBucket {
 			item.SetIcon(icons.AddCircle)
+			item.ContextMenus = append(item.ContextMenus, bucketContext)
+		} else {
+			item.ContextMenus = append(item.ContextMenus, keyContext)
 		}
-		item.ContextMenus = nil
-		item.ContextMenus = append(item.ContextMenus, nodeContext)
-		item.Scene.Data = node
-		item.ValueTitle = strings.Join(node.Path, " ")
+		//item.ValueTitle = strings.Join(node.Path, " ")
 		item.Name = strings.Join(node.Path, " ")
 		item.OnSelect(func(e events.Event) {
-			updateDetails(item.ValueTitle)
+			updateDetails(item.Name)
 		})
 		addNodes(item, node.Children)
 	}
 }
 
-func nodeContext(m *core.Scene) {
-	core.NewButton(m).SetText("Create").OnClick(func(e events.Event) {
-		log.Println("Create")
+func keyContext(m *core.Scene) {
+	button := core.NewButton(m)
+	button.SetText("Delete Key").OnClick(func(e events.Event) {
+		path := strings.ReplaceAll(m.This.AsTree().Name, "-menu", "")
+		deleteKeyDialog(path, button)
 	})
-	core.NewButton(m).SetText("Delete").OnClick(func(e events.Event) {
-		log.Println("info", m.This.AsTree().Parent)
+	core.NewButton(m).SetText("Move Key").OnClick(func(e events.Event) {
+		path := strings.ReplaceAll(m.This.AsTree().Name, "-menu", "")
+		moveKeyDialog(path, button)
 	})
-	core.NewButton(m).SetText("Empty").OnClick(func(e events.Event) {
-		log.Println("Empty")
+	core.NewButton(m).SetText("Rename Key").OnClick(func(e events.Event) {
+		path := strings.ReplaceAll(m.This.AsTree().Name, "-menu", "")
+		renameKeyDialog(path, button)
+	})
+	core.NewButton(m).SetText("Copy Key").OnClick(func(e events.Event) {
+		path := strings.ReplaceAll(m.This.AsTree().Name, "-menu", "")
+		copyKeyDialog(path, button)
+	})
+}
+
+func bucketContext(m *core.Scene) {
+	button := core.NewButton(m).SetText("Create Bucket")
+	button.OnClick(func(e events.Event) {
+		path := strings.ReplaceAll(m.This.AsTree().Name, "-menu", "")
+		createBucketDialog(path, button)
+	})
+	core.NewButton(m).SetText("Delete Bucket").OnClick(func(e events.Event) {
+		path := strings.ReplaceAll(m.This.AsTree().Name, "-menu", "")
+		deleteBucketDialog(path, button)
+	})
+	core.NewButton(m).SetText("Empty Bucket").OnClick(func(e events.Event) {
+		path := strings.ReplaceAll(m.This.AsTree().Name, "-menu", "")
+		emptyBucketDialog(path, button)
 	})
 	core.NewButton(m).SetText("Add Key").OnClick(func(e events.Event) {
-		log.Println(m.This.AsTree().Name)
+		path := strings.ReplaceAll(m.This.AsTree().Name, "-menu", "")
+		addKeyDialog(path, button)
 	})
-	core.NewButton(m).SetText("Move").OnClick(func(e events.Event) {
-		log.Println(m.This.AsTree().Name)
+	core.NewButton(m).SetText("Move Bucket").OnClick(func(e events.Event) {
+		path := strings.ReplaceAll(m.This.AsTree().Name, "-menu", "")
+		moveBucketDialog(path, button)
 	})
-	core.NewButton(m).SetText("Rename").OnClick(func(e events.Event) {
-		log.Println(m.This.AsTree().Name)
+	core.NewButton(m).SetText("Rename Bucket").OnClick(func(e events.Event) {
+		path := strings.ReplaceAll(m.This.AsTree().Name, "-menu", "")
+		renameBucketDialog(path, button)
 	})
-	core.NewButton(m).SetText("Search").OnClick(func(e events.Event) {
-		log.Println(m.This.AsTree().Name)
+	core.NewButton(m).SetText("Copy Bucket").OnClick(func(e events.Event) {
+		path := strings.ReplaceAll(m.This.AsTree().Name, "-menu", "")
+		copyBucketDialog(path, button)
 	})
 }
 
@@ -148,10 +179,7 @@ func updateDetails(item string) {
 	if !ok {
 		log.Println("invalid node", item)
 	}
-	log.Println(panes.Children)
 	panes.AsFrame().NodeBase.DeleteChildAt(1)
-	//panes.Children = panes.Children[:0]
-	log.Println(panes.Children)
 	details := core.NewFrame(panes)
 	if node.IsBucket {
 		core.NewText(details).SetText("Bucket:")
@@ -163,7 +191,8 @@ func updateDetails(item string) {
 	core.NewText(details).SetText("Name:" + string(node.Name))
 	if !node.IsBucket {
 		core.NewSpace(details)
-		buf := texteditor.NewEditor(details).Buffer.SetText(node.Value)
+		value := pretty(node.Value)
+		buf := texteditor.NewEditor(details).Buffer.SetText(value)
 		frame := core.NewFrame(details)
 		core.NewButton(frame).SetText("Reset").OnClick(func(e events.Event) {
 			buf.SetText(node.Value)
@@ -172,18 +201,32 @@ func updateDetails(item string) {
 			log.Println("validate json")
 		})
 		core.NewButton(frame).SetText("Update").OnClick(func(e events.Event) {
-			log.Println("update key value")
+			if err := UpdateKey(node, toJSON(buf.Text())); err != nil {
+				core.ErrorDialog(details, err, "Update Key")
+				return
+			}
+			reload()
 		})
 	}
 	panes.Update()
 }
 
-// func setDetails(frame *core.Frame, item string) {
-// 	node, ok := nodeMap[item]
-// 	if !ok && item != "" {
-// 		log.Println("invalid node")
-// 	}
-// 	frame.Cl
-// 	core.NewText(frame).SetText
+func pretty(s []byte) []byte {
+	var data bytes.Buffer
+	if err := json.Indent(&data, s, "", "\t"); err != nil {
+		return s
+	}
+	return data.Bytes()
+}
 
-// }
+func toJSON(orig []byte) []byte { //nolint:varnamelen
+	var temp any
+	if err := json.Unmarshal(orig, &temp); err != nil {
+		return orig
+	}
+	bytes, err := json.Marshal(temp)
+	if err != nil {
+		return orig
+	}
+	return bytes
+}
