@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"log"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"cogentcore.org/core/core"
@@ -49,35 +51,37 @@ func main() {
 	b := core.NewButton(app).SetText("File")
 	b.SetMenu(func(m *core.Scene) {
 		core.NewButton(m).SetText("Open File").OnClick(func(e events.Event) {
+			current, _ := os.Getwd()
 			d := core.NewBody("File Open")
 			ft := filetree.NewTree(d).OpenPath(".")
-			selected := []string{}
+			selected := ""
 			ft.OnSelect(func(e events.Event) {
-				selected = []string{}
 				ft.SelectedFunc(func(n *filetree.Node) {
-					selected = append(selected, string(n.Filepath))
+					selected = string(n.Filepath)
 				})
 			})
-			panes := core.NewFrame(d)
-			core.NewButton(panes).SetText("Close").OnClick(func(e events.Event) {
-				d.Close()
+			d.AddBottomBar(func(bar *core.Frame) {
+				d.AddCancel(bar)
+				core.NewButton(bar).SetText("Open Parent").OnClick(func(e events.Event) {
+					current = filepath.Dir(current)
+					ft.DeleteChildren()
+					ft.OpenPath(current)
+					d.Update()
+				})
+				d.AddOK(bar).OnClick(func(e events.Event) {
+					log.Println("open file ", selected)
+					if err := loadFile(selected); err != nil {
+						core.ErrorDialog(d, err, "Open File")
+					}
+				})
+				//fp.OnClose()
+				//log.Println(fp.SelectedFile())
 			})
-			core.NewButton(panes).SetText("Ok").OnClick(func(e events.Event) {
-				log.Println(selected)
-				if err := loadFile(strings.Join(selected, "")); err != nil {
-					core.ErrorDialog(d, err, "Open File")
-				}
-				d.Close()
-			})
-			//fp.OnClose()
-			//log.Println(fp.SelectedFile())
 			d.RunDialog(b)
-			log.Println(selected)
 		})
 		core.NewButton(m).SetText("Quit").OnClick(func(e events.Event) {
 			app.Close()
 		})
-		core.NewButton(m).SetText("Send Message")
 	})
 	b.Scene.ContextMenus = nil
 
