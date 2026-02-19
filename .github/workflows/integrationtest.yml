@@ -15,7 +15,7 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -30,7 +30,7 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -45,7 +45,7 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: setup go
         uses: actions/setup-go@v5
         with:
