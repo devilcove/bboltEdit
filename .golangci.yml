@@ -13,7 +13,13 @@ linters:
     - depguard
     - forbidigo
     - nlreturn
+    - noinlineerr
     - wsl
+    - wsl_v5
+  settings:
+    gosec:
+      excludes:
+        - G706
   exclusions:
     generated: lax
     presets:
