@@ -8,6 +8,7 @@ linters:
     - exhaustive
     - forcetypeassert
     - gochecknoglobals
+    - gomodguard
     - mnd
     - wrapcheck
     - depguard
@@ -20,6 +21,13 @@ linters:
     gosec:
       excludes:
         - G706
+    varnamelen:
+      ignore-decls:
+        - b *bbolt.Bucket
+        - db *bbolt.DB
+        - tx *bbolt.Tx
+        - k []byte
+        - v []byte
   exclusions:
     generated: lax
     presets:

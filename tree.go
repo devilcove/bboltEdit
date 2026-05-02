@@ -96,7 +96,7 @@ func newTree(detail *tview.TextView) *tview.TreeView { //nolint:funlen
 					showError("not applicable to root node")
 					return nil
 				}
-				if node.kind == "bucket" { //nolint:goconst
+				if node.isBucket {
 					empty := dialog(emptyForm(node, "dialog"), 60, 7)
 					pager.AddPage("dialog", empty, true, true)
 					log.Println("focus empty modal")
@@ -175,7 +175,7 @@ func updateDetail(detail *tview.TextView, node *tview.TreeNode) {
 		log.Println("invalid value", value)
 		return
 	}
-	if entry.kind == "bucket" {
+	if entry.isBucket {
 		value = fmt.Sprintf("Bucket:\n\nPath: %s\nName: %s",
 			strings.Join(entry.path, " -> "), string(entry.name))
 	} else {
@@ -241,8 +241,8 @@ func getCurrentNode() dbNode {
 	reference := treeNode.GetReference()
 	if reference == nil {
 		return dbNode{
-			path: nil,
-			kind: "bucket",
+			path:     nil,
+			isBucket: true,
 		}
 	}
 	path := reference.([]string)

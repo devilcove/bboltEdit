@@ -1,4 +1,3 @@
-//nolint:varnamelen
 package main
 
 import (
@@ -20,10 +19,10 @@ var (
 )
 
 type dbNode struct {
-	path  []string
-	kind  string
-	name  []byte
-	value []byte
+	path     []string
+	isBucket bool
+	name     []byte
+	value    []byte
 }
 
 func InitDatabase(file string) error {
@@ -67,9 +66,9 @@ func getNodes() []*tview.TreeNode {
 func process(name []byte, path []string, b *bbolt.Bucket) *tview.TreeNode {
 	path = append(path, string(name))
 	dbNodes[strings.Join(path, " -> ")] = dbNode{
-		path: path,
-		name: name,
-		kind: "bucket",
+		path:     path,
+		name:     name,
+		isBucket: true,
 	}
 	node := tview.NewTreeNode(string(name)).SetReference(path).
 		SetSelectable(true).Collapse().SetColor(tcell.ColorGreen)
@@ -84,10 +83,10 @@ func process(name []byte, path []string, b *bbolt.Bucket) *tview.TreeNode {
 			node.AddChild(tview.NewTreeNode(string(k)).SetReference(childPath).
 				SetSelectable(true)).Collapse()
 			dbNodes[strings.Join(childPath, " -> ")] = dbNode{
-				path:  childPath,
-				kind:  "key",
-				name:  k,
-				value: v,
+				path:     childPath,
+				isBucket: false,
+				name:     k,
+				value:    v,
 			}
 		}
 		return nil
@@ -98,7 +97,7 @@ func process(name []byte, path []string, b *bbolt.Bucket) *tview.TreeNode {
 
 func renameEntry(node dbNode, value string) error {
 	log.Println("rename entry", node.path, value)
-	if node.kind == "bucket" {
+	if node.isBucket {
 		return renameBucket(node, value)
 	}
 	return renameKey(node, value)
@@ -232,7 +231,7 @@ func getBucket(path []string, tx *bbolt.Tx) (*bbolt.Bucket, error) {
 }
 
 func deleteEntry(node dbNode) error {
-	if node.kind == "bucket" {
+	if node.isBucket {
 		return deleteBucket(node)
 	}
 	return deleteKey(node)
@@ -312,7 +311,7 @@ func addKey(path []string, name, value string) error {
 }
 
 func copyItem(node dbNode, newpath []string) error {
-	if node.kind == "bucket" {
+	if node.isBucket {
 		return copyBucket(node, newpath)
 	}
 	return copyKey(node, newpath)
@@ -377,7 +376,7 @@ func copyKey(node dbNode, newpath []string) error {
 }
 
 func moveItem(node dbNode, newpath []string) error {
-	if node.kind == "bucket" {
+	if node.isBucket {
 		return moveBucket(node, newpath)
 	}
 	return moveKey(node, newpath)
